@@ -387,24 +387,12 @@ func main() {
 	router := WithDB{db: db}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, "./client/index.html")
-	})
-	mux.HandleFunc("/styles.css", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./client/styles.css")
-	})
-	mux.HandleFunc("/main.js", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./client/main.js")
-	})
 	mux.HandleFunc("/api/login", router.Login)
 	mux.Handle("/api/transactions", router.AuthMiddleware(http.HandlerFunc(router.GetTransactions)))
 	mux.Handle("/api/transaction/update", router.AuthMiddleware(http.HandlerFunc(router.UpdateTransaction)))
 	mux.Handle("/api/transactions/tags", router.AuthMiddleware(http.HandlerFunc(router.ManageTags)))
 	mux.Handle("/api/categories", router.AuthMiddleware(http.HandlerFunc(router.GetCategories)))
+	mux.Handle("/", http.FileServer(http.Dir("./dist")))
 
 	log.Print("listening on :8080...")
 	err = http.ListenAndServe(":8080", LoggerMiddleware(mux))

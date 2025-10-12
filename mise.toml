@@ -6,6 +6,9 @@ run = "pg_dump -s $DATABASE_URL > schema.sql"
 
 [tasks.build_client]
 # env = { NODE_ENV = "production" }
-run = "bun build $([ \"$NODE_ENV\" == \"production\" ] && echo \"--production\") --outfile=./client/main.js ./client/main.ts"
-outputs = ["client/main.js"]
-sources = ["client/*.ts"]
+run = [
+  "rm -rf dist",
+  "bun build $([ \"$NODE_ENV\" == \"production\" ] && echo \"--production\") --outdir=dist ./client/index.html",
+]
+outputs = ["dist/*"]
+sources = ["client/*"]
