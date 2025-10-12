@@ -121,7 +121,7 @@
         </div>
         <div id="grouped-content" class="main-tab-content active">
           <div class="grouped-options">
-            </div>
+          </div>
         </div>
         <div id="transactions-content" class="main-tab-content">
           <div class="transactions-actions"></div>
@@ -222,7 +222,10 @@
       <h3 id="tag-modal-title">Add Tag</h3>
       <div class="editable-field">
         <label class="editable-label">Tag:</label>
-        <input type="text" id="tag-modal-input" class="modal-input">
+        <div class="tags-input-container">
+          <input type="text" id="tag-modal-input" class="modal-input">
+          <div id="tag-suggestions" class="suggestions-dropdown"></div>
+        </div>
       </div>
       <div class="modal-footer">
         <button id="save-tag-btn" class="apply-btn">Save</button>

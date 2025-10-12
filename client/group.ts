@@ -26,41 +26,41 @@ function groupTransactions(transactions: Transaction[], keyExtractor: (tr: Trans
 }
 
 function getCommonTags(transactions: Transaction[]): string[] {
-    if (!transactions || transactions.length === 0) {
-        return [];
+  if (!transactions || transactions.length === 0) {
+    return [];
+  }
+  const tagCounts: Record<string, number> = {};
+  for (const tr of transactions) {
+    // Ensure tr.tags is an array
+    const tags = Array.isArray(tr.tags) ? tr.tags : [];
+    for (const tag of tags) {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     }
-    const tagCounts: Record<string, number> = {};
-    for (const tr of transactions) {
-        // Ensure tr.tags is an array
-        const tags = Array.isArray(tr.tags) ? tr.tags : [];
-        for (const tag of tags) {
-            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-        }
+  }
+  const commonTags: string[] = [];
+  for (const tag in tagCounts) {
+    if (tagCounts[tag] === transactions.length) {
+      commonTags.push(tag);
     }
-    const commonTags: string[] = [];
-    for (const tag in tagCounts) {
-        if (tagCounts[tag] === transactions.length) {
-            commonTags.push(tag);
-        }
-    }
-    return commonTags;
+  }
+  return commonTags;
 }
 
 async function manageGroupTags(transactionIDs: number[], tag: string, action: 'add' | 'remove') {
-    try {
-        const response = await fetch('/api/transactions/tags', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ transaction_ids: transactionIDs, tag, action }),
-        });
-        if (!response.ok) {
-            throw new Error('Failed to update tags');
-        }
-        fetchTransactions(); // Refresh data
-    } catch (err) {
-        console.error(err);
-        alert('Error updating tags.');
+  try {
+    const response = await fetch('/api/transactions/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transaction_ids: transactionIDs, tag, action }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update tags');
     }
+    fetchTransactions(); // Refresh data
+  } catch (err) {
+    console.error(err);
+    alert('Error updating tags.');
+  }
 }
 
 export function setupGroup() {
@@ -96,7 +96,7 @@ export function setupGroup() {
                         e.preventDefault();
                         e.stopPropagation();
                         if (confirm(`Remove tag "${tag}" from all transactions in this group?`)) {
-                            manageGroupTags(transactionIDs, tag, 'remove');
+                          manageGroupTags(transactionIDs, tag, 'remove');
                         }
                       }
                     }, '×')

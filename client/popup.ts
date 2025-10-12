@@ -3,6 +3,14 @@ import { categories, formatOccurredAt, type Transaction, transactions } from './
 
 const { div, span, strong, img, input, textarea, select, option } = van.tags;
 
+function getAllTags() {
+  const tagSet = new Set<string>();
+  transactions.val.forEach(t => {
+    t.tags.forEach(tag => tagSet.add(tag));
+  });
+  return Array.from(tagSet).sort();
+}
+
 export function transactionPopup(tr: Transaction) {
   const modal = document.getElementById('transaction-modal') as HTMLElement;
   const modalDetails = document.getElementById('modal-details') as HTMLElement;
@@ -18,6 +26,136 @@ export function transactionPopup(tr: Transaction) {
     modalDetails.innerHTML = ''; // Clear previous content
     modalPhotos.innerHTML = '';
     saveButton.style.display = 'none'; // Hide save button initially
+
+    function createTagsField(label: string, tags: string[], onUpdate: (tags: string[]) => void) {
+      const { div, strong, span, input } = van.tags;
+
+      const valueSpan = span({ class: 'editable-value' }, tags.join(', ') || 'N/A');
+      (valueSpan as any)._value = tags;
+
+      const fieldContainer = div({ class: 'editable-field' },
+        strong({ class: 'editable-label' }, label),
+        valueSpan
+      );
+
+      fieldContainer.addEventListener('click', (e) => {
+        if (fieldContainer.querySelector('.tags-input-container-wrapper') || (e.target as HTMLElement).tagName === 'A') return;
+
+        let currentTags = [...(valueSpan as any)._value];
+        const allTags = getAllTags();
+
+        const tagsContainer = div({ class: 'tags-list' });
+        const inputEl = input({ class: 'tags-input-real', type: 'text', placeholder: 'Add a tag...' });
+        const suggestionsContainer = div({ class: 'suggestions-dropdown' });
+
+        function renderTags() {
+          tagsContainer.innerHTML = '';
+          currentTags.forEach(tag => {
+            const tagPill = span({ class: 'tag-pill' },
+              tag,
+              span({ class: 'tag-pill-remove', 'data-tag': tag }, '×')
+            );
+            tagsContainer.appendChild(tagPill);
+          });
+        }
+
+        const componentWrapper = div({ class: 'tags-input-container-wrapper' });
+        const component = div({ class: 'tags-input-container multi', onclick: () => inputEl.focus() },
+          tagsContainer,
+          inputEl
+        );
+        van.add(componentWrapper, component, suggestionsContainer);
+
+        const updateTags = (newTags: string[]) => {
+          currentTags = newTags;
+          renderTags();
+          onUpdate(currentTags);
+          showSaveButton();
+        };
+
+        tagsContainer.addEventListener('click', e => {
+          const target = e.target as HTMLElement;
+          if (target.classList.contains('tag-pill-remove')) {
+            const tagToRemove = target.dataset.tag;
+            if (tagToRemove) {
+              updateTags(currentTags.filter(t => t !== tagToRemove));
+            }
+          }
+        });
+
+        const addTagFromInput = () => {
+          const newTag = inputEl.value.trim();
+          if (newTag && !currentTags.includes(newTag)) {
+            updateTags([...currentTags, newTag]);
+          }
+          inputEl.value = '';
+          hideSuggestions();
+        };
+
+        inputEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTagFromInput();
+          } else if (e.key === 'Backspace' && inputEl.value === '' && currentTags.length > 0) {
+            const newTags = [...currentTags];
+            newTags.pop();
+            updateTags(newTags);
+          }
+        });
+
+        function showSuggestions() {
+          const inputText = inputEl.value.toLowerCase();
+          const filteredTags = allTags.filter(tag =>
+            tag.toLowerCase().includes(inputText) && !currentTags.includes(tag)
+          );
+
+          suggestionsContainer.innerHTML = '';
+          if (filteredTags.length > 0 && inputText) {
+            filteredTags.forEach(tag => {
+              const item = div({ class: 'suggestion-item' }, tag);
+              item.addEventListener('click', () => {
+                if (!currentTags.includes(tag)) {
+                  updateTags([...currentTags, tag]);
+                }
+                inputEl.value = '';
+                hideSuggestions();
+                inputEl.focus();
+              });
+              suggestionsContainer.appendChild(item);
+            });
+            suggestionsContainer.style.display = 'block';
+          } else {
+            hideSuggestions();
+          }
+        }
+
+        function hideSuggestions() {
+          suggestionsContainer.style.display = 'none';
+        }
+
+        inputEl.addEventListener('input', showSuggestions);
+        inputEl.addEventListener('focus', showSuggestions);
+
+        inputEl.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (!componentWrapper.contains(document.activeElement)) {
+              addTagFromInput();
+              valueSpan.textContent = currentTags.join(', ') || 'N/A';
+              (valueSpan as any)._value = currentTags;
+              if (fieldContainer.contains(componentWrapper)) {
+                fieldContainer.replaceChild(valueSpan, componentWrapper);
+              }
+            }
+          }, 150);
+        });
+
+        renderTags();
+        fieldContainer.replaceChild(componentWrapper, valueSpan);
+        inputEl.focus();
+      });
+
+      return fieldContainer;
+    }
 
     const createEditableField = (label: string, value: any, onUpdate: (s: string) => void, type = 'text', options: readonly string[] = []) => {
       const isTextarea = type === 'textarea';
@@ -106,7 +244,7 @@ export function transactionPopup(tr: Transaction) {
       createEditableField('Person:', editableTr.personName, (v) => editableTr.personName = v),
       createEditableField('Card:', editableTr.card, (v) => editableTr.card = v),
       createEditableField('Category:', editableTr.category, (v) => editableTr.category = v, 'select', categories.val),
-      createEditableField('Tags (comma separated):', editableTr.tags.join(', '), (v) => editableTr.tags = v.split(',').map(t => t.trim())),
+      createTagsField('Tags:', editableTr.tags, (v) => editableTr.tags = v),
       createEditableField('Details:', editableTr.details, (v) => editableTr.details = v, 'textarea'),
     ]);
 

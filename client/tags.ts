@@ -1,4 +1,4 @@
-import { fetchTransactions } from "./common.ts";
+import { fetchTransactions, transactions } from "./common.ts";
 
 let currentTransactionIDs: number[] = [];
 
@@ -47,6 +47,54 @@ export function setupTagModal() {
     const saveButton = document.getElementById('save-tag-btn')!;
     const tagInput = document.getElementById('tag-modal-input') as HTMLInputElement;
     const modalTitle = document.getElementById('tag-modal-title')!;
+    const suggestionsContainer = document.getElementById('tag-suggestions') as HTMLElement;
+
+    let allTags: string[] = [];
+
+    function updateAllTags() {
+        const tagSet = new Set<string>();
+        transactions.val.forEach(t => {
+            t.tags.forEach(tag => tagSet.add(tag));
+        });
+        allTags = Array.from(tagSet).sort();
+    }
+
+    function showSuggestions() {
+        const inputText = tagInput.value.toLowerCase();
+        const filteredTags = allTags.filter(tag => tag.toLowerCase().includes(inputText));
+
+        suggestionsContainer.innerHTML = '';
+        if (filteredTags.length > 0) {
+            filteredTags.forEach(tag => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = tag;
+                item.addEventListener('click', () => {
+                    tagInput.value = tag;
+                    suggestionsContainer.style.display = 'none';
+                });
+                suggestionsContainer.appendChild(item);
+            });
+            suggestionsContainer.style.display = 'block';
+        } else {
+            suggestionsContainer.style.display = 'none';
+        }
+    }
+
+    tagInput.addEventListener('focus', () => {
+        updateAllTags();
+        showSuggestions();
+    });
+
+    tagInput.addEventListener('input', showSuggestions);
+
+    tagInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            suggestionsContainer.style.display = 'none';
+        }, 200); // Delay to allow click on suggestion
+    });
+
+
     closeButton.onclick = closeModal;
     window.addEventListener('click', (event) => {
         if (event.target == modal) {

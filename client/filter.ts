@@ -1,5 +1,5 @@
 import van, { type State } from "vanjs-core";
-import { amountFilter, cardFilter, cards, categories, categoryFilter, dateEndFilter, dateStartFilter, merchantFilter, merchants, personFilter, persons, tagFilter, tags, transactions, minDate, maxDate } from './common.ts';
+import { amountFilter, cardFilter, cards, categories, categoryFilter, dateEndFilter, dateStartFilter, maxDate, merchantFilter, merchants, minDate, personFilter, persons, tagFilter, tags, transactions } from './common.ts';
 
 declare const DateRangePicker: any;
 
