@@ -378,6 +378,7 @@ func (db WithDB) AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
+	log.Println("Init")
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
 	dbname := os.Getenv("POSTGRES_DB")
