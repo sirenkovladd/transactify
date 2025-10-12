@@ -1,0 +1,13 @@
+{
+  "name": "transaction-summary",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "vanjs-core": "^1.6.0"
+  }
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Fetcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      width: 300px;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 font-sans">
+  <div class="flex flex-col items-center space-y-4">
+    <h1 class="text-xl font-bold">Transaction Exporter</h1>
+    <button id="fetchButton"
+      class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300">
+      Fetch & Send Transactions
+    </button>
+    <div id="status" class="text-sm text-gray-500 dark:text-gray-400 h-10"></div>
+    <div id="dateRange" class="text-center p-2 bg-gray-200 dark:bg-gray-700 rounded-lg w-full hidden">
+      <p class="font-semibold">Transaction Period:</p>
+      <p id="firstDate"></p>
+      <p id="lastDate"></p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

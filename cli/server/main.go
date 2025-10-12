@@ -1,0 +1,230 @@
+package main
+
+import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+
+	"code.sirenko.ca/transaction/src"
+
+	_ "github.com/lib/pq"
+)
+
+func LoggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
+}
+
+type WithDB struct {
+	db *sql.DB
+}
+
+type Transaction struct {
+	ID         int64    `json:"id"`
+	Amount     float64  `json:"amount"`
+	Currency   string   `json:"currency"`
+	OccurredAt string   `json:"occurredAt"`
+	Merchant   string   `json:"merchant"`
+	PersonName string   `json:"personName"`
+	Card       string   `json:"card"`
+	Category   string   `json:"category"`
+	Details    *string  `json:"details"`
+	Tags       []string `json:"tags"`
+}
+
+func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rows, err := db.db.Query(`
+		SELECT
+			t.transaction_id, t.amount, t.currency, t.occurred_at, t.merchant, t.person_name, t.card, t.category, t.details,
+			COALESCE(STRING_AGG(tags.tag_name, ',' ORDER BY tags.tag_name), '') AS tags
+		FROM transactions t
+		LEFT JOIN transaction_tags ON t.transaction_id = transaction_tags.transaction_id
+		LEFT JOIN tags ON transaction_tags.tag_id = tags.tag_id
+		GROUP BY t.transaction_id
+		ORDER BY t.occurred_at DESC
+	`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var transactions []Transaction
+	for rows.Next() {
+		var t Transaction
+		var tags string
+		err := rows.Scan(&t.ID, &t.Amount, &t.Currency, &t.OccurredAt, &t.Merchant, &t.PersonName, &t.Card, &t.Category, &t.Details, &tags)
+		if tags != "" {
+			t.Tags = strings.Split(tags, ",")
+		} else {
+			t.Tags = []string{}
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		transactions = append(transactions, t)
+	}
+	http.Header.Add(w.Header(), "Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(transactions)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+type UpdateTransactionPayload struct {
+	ID         int64    `json:"id"`
+	Amount     *float64 `json:"amount"`
+	Currency   *string  `json:"currency"`
+	OccurredAt *string  `json:"occurredAt"`
+	Merchant   *string  `json:"merchant"`
+	PersonName *string  `json:"personName"`
+	Card       *string  `json:"card"`
+	Category   *string  `json:"category"`
+	Details    *string  `json:"details"`
+	Tags       []string `json:"tags"`
+}
+
+func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var payload UpdateTransactionPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if payload.ID == 0 {
+		http.Error(w, "Transaction ID is required", http.StatusBadRequest)
+		return
+	}
+
+	var query strings.Builder
+	query.WriteString("UPDATE transactions SET ")
+
+	params := make([]interface{}, 0)
+	paramId := 1
+
+	if payload.Merchant != nil {
+		query.WriteString(fmt.Sprintf("merchant = $%d, ", paramId))
+		params = append(params, *payload.Merchant)
+		paramId++
+	}
+	if payload.Amount != nil {
+		query.WriteString(fmt.Sprintf("amount = $%d, ", paramId))
+		params = append(params, *payload.Amount)
+		paramId++
+	}
+	if payload.OccurredAt != nil {
+		query.WriteString(fmt.Sprintf("occurred_at = $%d, ", paramId))
+		params = append(params, *payload.OccurredAt)
+		paramId++
+	}
+	if payload.PersonName != nil {
+		query.WriteString(fmt.Sprintf("person_name = $%d, ", paramId))
+		params = append(params, *payload.PersonName)
+		paramId++
+	}
+	if payload.Card != nil {
+		query.WriteString(fmt.Sprintf("card = $%d, ", paramId))
+		params = append(params, *payload.Card)
+		paramId++
+	}
+	if payload.Category != nil {
+		query.WriteString(fmt.Sprintf("category = $%d, ", paramId))
+		params = append(params, *payload.Category)
+		paramId++
+	}
+	if payload.Details != nil {
+		query.WriteString(fmt.Sprintf("details = $%d, ", paramId))
+		params = append(params, *payload.Details)
+		paramId++
+	}
+	if payload.Currency != nil {
+		query.WriteString(fmt.Sprintf("currency = $%d, ", paramId))
+		params = append(params, *payload.Currency)
+		paramId++
+	}
+
+	if len(params) > 0 {
+		finalQuery := query.String()
+		finalQuery = finalQuery[:len(finalQuery)-2]
+		finalQuery += fmt.Sprintf(" WHERE transaction_id = $%d", paramId)
+		params = append(params, payload.ID)
+
+		_, err := db.db.Exec(finalQuery, params...)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update transaction: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (db WithDB) GetCategories(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	categoryKeys := make([]string, 0, len(src.Categories))
+	for k := range src.Categories {
+		categoryKeys = append(categoryKeys, k)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(categoryKeys)
+	if err != nil {
+		log.Printf("Error encoding categories: %v", err)
+		http.Error(w, "Failed to encode categories", http.StatusInternalServerError)
+	}
+}
+
+func main() {
+	connStr := "postgres://user:password@localhost:5432/mydb?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	router := WithDB{db: db}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFile(w, r, "./client/index.html")
+	})
+	mux.HandleFunc("/styles.css", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./client/styles.css")
+	})
+	mux.HandleFunc("/main.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./client/main.js")
+	})
+	mux.HandleFunc("/api/transactions", router.GetTransactions)
+	mux.HandleFunc("/api/transaction/update", router.UpdateTransaction)
+	mux.HandleFunc("/api/categories", router.GetCategories)
+
+	log.Print("listening on :8080...")
+	err = http.ListenAndServe(":8080", LoggerMiddleware(mux))
+	if err != nil {
+		panic(err)
+	}
+}

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Стильні Транзакції</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="main.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <div class="page-container">
+    <div class="mobile-filter">
+      <h2>Фільтри</h2>
+      <div class="filter-group">
+        <label>Сума:</label>
+        <div class="amount-filter-inputs">
+          <input type="number" id="amount-min-mobile" placeholder="Min">
+          <span>-</span>
+          <input type="number" id="amount-max-mobile" placeholder="Max">
+        </div>
+        <div class="double-slider-container" id="double-slider-mobile">
+          <div class="double-slider-track"></div>
+          <div class="double-slider-range" id="double-slider-range-mobile"></div>
+          <div class="double-slider-thumb" id="thumb-min-mobile"></div>
+          <div class="double-slider-thumb" id="thumb-max-mobile"></div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label for="date-start-mobile">Від:</label>
+        <input type="date" id="date-start-mobile" value="2023-01-01">
+        <label for="date-end-mobile">До:</label>
+        <input type="date" id="date-end-mobile" value="2024-01-01">
+      </div>
+      <div class="filter-group">
+        <label for="merchant-mobile">Мерчант:</label>
+        <div id="merchant-mobile" class="multi-select-container"></div>
+      </div>
+      <div class="filter-group">
+        <label for="card-mobile">Картка:</label>
+        <div id="card-mobile" class="multi-select-container"></div>
+      </div>
+      <div class="filter-group">
+        <label for="person-mobile">Ім'я:</label>
+        <div id="person-mobile" class="multi-select-container"></div>
+      </div>
+      <div class="filter-group">
+        <label for="category-mobile">Категорія:</label>
+        <div id="category-mobile" class="multi-select-container"></div>
+      </div>
+      <button class="apply-btn">Застосувати фільтри</button>
+    </div>
+
+    <div class="desktop-layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>Фільтри</h2>
+        </div>
+        <div class="filter-group">
+          <label>Сума:</label>
+          <div class="amount-filter-inputs">
+            <input type="number" id="amount-min" placeholder="Min">
+            <span>-</span>
+            <input type="number" id="amount-max" placeholder="Max">
+          </div>
+          <div class="double-slider-container" id="double-slider-desktop">
+            <div class="double-slider-track"></div>
+            <div class="double-slider-range" id="double-slider-range-desktop"></div>
+            <div class="double-slider-thumb" id="thumb-min-desktop"></div>
+            <div class="double-slider-thumb" id="thumb-max-desktop"></div>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label for="date-start">Дата від:</label>
+          <input type="date" id="date-start" value="2023-01-01">
+          <label for="date-end">Дата до:</label>
+          <input type="date" id="date-end" value="2024-01-01">
+        </div>
+        <div class="filter-group">
+          <label for="merchant">Мерчант:</label>
+          <div id="merchant" class="multi-select-container"></div>
+        </div>
+        <div class="filter-group">
+          <label for="card">Картка:</label>
+          <div id="card" class="multi-select-container"></div>
+        </div>
+        <div class="filter-group">
+          <label for="person">Ім'я:</label>
+          <div id="person" class="multi-select-container"></div>
+        </div>
+        <div class="filter-group">
+          <label for="category">Категорія:</label>
+          <div id="category" class="multi-select-container"></div>
+        </div>
+        <button class="apply-btn desktop-btn">Застосувати фільтри</button>
+      </aside>
+
+      <main class="main-content">
+        <div class="main-tab-container">
+          <div class="main-tab active" data-tab="grouped">Grouped</div>
+          <div class="main-tab" data-tab="transactions">Transactions</div>
+        </div>
+        <div id="grouped-content" class="main-tab-content active">
+          <div class="grouped-options">
+            </div>
+        </div>
+        <div id="transactions-content" class="main-tab-content">
+          <div class="transactions-list"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="create-btn-container">
+    <div class="create-btn-content">
+      <a href="#" id="create-new-transaction-btn">New Transaction</a>
+      <a href="#" id="import-transaction">Import</a>
+    </div>
+    <button class="create-btn">+ New</button>
+  </div>
+
+  <!-- The Modal -->
+  <div id="transaction-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <div id="modal-details"></div>
+      <div id="modal-photos"></div>
+      <div class="modal-footer">
+        <button id="save-changes-btn" class="apply-btn">Зберегти зміни</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="import-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <div class="tab-container">
+        <div class="tab active" data-tab="csv">CSV</div>
+        <div class="tab" data-tab="cibc">CIBC</div>
+        <div class="tab" data-tab="wealthsimple">Wealthsimple</div>
+      </div>
+      <div id="csv-tab" class="tab-content active">
+        <textarea id="csv-input" placeholder="Paste your CSV data here"></textarea>
+        <button id="parse-csv-btn" class="apply-btn">Parse</button>
+      </div>
+      <div id="cibc-tab" class="tab-content">
+        <textarea id="cibc-input" placeholder="Paste your CIBC data here"></textarea>
+        <button id="parse-cibc-btn" class="apply-btn">Parse</button>
+      </div>
+      <div id="wealthsimple-tab" class="tab-content">
+        <textarea id="wealthsimple-input" placeholder="Paste your Wealthsimple data here"></textarea>
+        <button id="parse-wealthsimple-btn" class="apply-btn">Parse</button>
+      </div>
+      <div id="parsed-transactions-container"></div>
+    </div>
+  </div>
+
+  <!-- Create New Transaction Modal -->
+  <div id="create-new-transaction-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h3>Create New Transaction</h3>
+      <div class="editable-field">
+        <label class="editable-label">Date:</label>
+        <input type="datetime-local" id="new-transaction-date" class="modal-input">
+      </div>
+      <div class="editable-field">
+        <label class="editable-label">Merchant:</label>
+        <input type="text" id="new-transaction-merchant" class="modal-input">
+      </div>
+      <div class="editable-field">
+        <label class="editable-label">Amount:</label>
+        <input type="number" id="new-transaction-amount" class="modal-input">
+      </div>
+      <div class="editable-field">
+        <label class="editable-label">Person:</label>
+        <input type="text" id="new-transaction-person" class="modal-input">
+      </div>
+      <div class="editable-field">
+        <label class="editable-label">Card:</label>
+        <input type="text" id="new-transaction-card" class="modal-input">
+      </div>
+      <div class="editable-field">
+        <label class="editable-label">Category:</label>
+        <select id="new-transaction-category" class="modal-input"></select>
+      </div>
+      <div class="editable-field">
+        <label class="editable-label">Tags:</label>
+        <input type="text" id="new-transaction-tags" class="modal-input">
+      </div>
+      <div class="modal-footer">
+        <button id="save-new-transaction-btn" class="apply-btn">Save Transaction</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

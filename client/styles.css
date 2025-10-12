@@ -1,0 +1,957 @@
+details {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+summary {
+  padding: 15px;
+  cursor: pointer;
+  outline: none;
+  font-weight: 600;
+}
+
+summary h3 {
+  display: inline;
+  margin: 0;
+}
+
+details[open] > summary {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.main-tab-container {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  background-color: var(--card-bg);
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.main-tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.main-tab.active {
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.main-tab-content {
+  display: none;
+}
+
+.main-tab-content.active {
+  display: block;
+}
+
+.grouped-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.grouped-options .option {
+  padding: 8px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.grouped-options .option.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+:root {
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --background-light: #f8f9fa;
+  --background-dark: #e9ecef;
+  --card-bg: #ffffff;
+  --text-color: #343a40;
+  --light-text: #6c757d;
+  --border-color: #dee2e6;
+  --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.1);
+  --success-color: #28a745;
+  --tag-bg: #e0f2f7;
+  /* Light blue for tags */
+  --tag-text: #2196f3;
+  /* Darker blue for tag text */
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-light);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.page-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background-light);
+}
+
+/* Десктопний макет за замовчуванням */
+.desktop-layout {
+  display: flex;
+  width: 100%;
+  max-width: 1400px;
+  /* Обмеження ширини для центрування */
+  margin: 0 auto;
+  padding: 20px;
+  gap: 30px;
+  /* Відстань між сайдбаром та контентом */
+}
+
+.sidebar {
+  flex: 0 0 280px;
+  /* Фіксована ширина сайдбару */
+  padding: 25px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  height: fit-content;
+  /* Сайдбар займає висоту контенту */
+  position: sticky;
+  top: 20px;
+  /* Відступ від верху */
+  align-self: flex-start;
+  /* Прилипає до верху батьківського контейнера */
+}
+
+.sidebar-header {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar h2 {
+  font-size: 1.6em;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 60px 20px 20px 20px;
+  /* Вже є padding у page-container */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Центрує список транзакцій */
+}
+
+.transactions-list {
+  width: 100%;
+  max-width: 800px;
+  /* Максимальна ширина для списку транзакцій */
+}
+
+.page-title {
+  font-size: 2.2em;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 30px;
+  text-align: center;
+  /* Центрування заголовка */
+}
+
+/* Мобільний фільтр - схований за замовчуванням */
+.mobile-filter {
+  display: none;
+  padding: 20px;
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-light);
+  margin-bottom: 20px;
+  border-radius: 0 0 12px 12px;
+  /* Закруглені кути знизу */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mobile-filter h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-color);
+  font-size: 1.8em;
+}
+
+/* Групи фільтрів */
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 0.95em;
+}
+
+.filter-group input[type="text"],
+.filter-group input[type="date"],
+.filter-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1em;
+  color: var(--text-color);
+  background-color: var(--background-light);
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-group input[type="text"]:focus,
+.filter-group input[type="date"]:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  background-color: var(--card-bg);
+}
+
+.filter-group input[type="range"] {
+  -webkit-appearance: none;
+  /* Видалити стандартний стиль */
+  width: 100%;
+  height: 8px;
+  background: var(--background-dark);
+  border-radius: 5px;
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  margin-top: 10px;
+}
+
+.filter-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.filter-group input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.range-value {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  font-weight: 500;
+  color: var(--light-text);
+}
+
+.apply-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  margin-top: 20px;
+}
+
+/* Hide filter apply buttons as we use live filtering */
+.sidebar .apply-btn,
+.mobile-filter .apply-btn {
+  display: none;
+}
+
+.apply-btn:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+/* Картка транзакції */
+.transaction-card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  padding: 20px 25px;
+  margin-bottom: 20px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.transaction-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 15px;
+}
+
+.category-icon {
+  font-size: 2.2em;
+  line-height: 1;
+}
+
+.transaction-info {
+  flex-grow: 1;
+}
+
+.merchant-name {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.person-name {
+  color: var(--light-text);
+  font-size: 0.95em;
+  margin: 0;
+}
+
+.transaction-amount {
+  text-align: right;
+}
+
+.amount {
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--success-color);
+  /* Зелений колір для суми */
+  display: block;
+}
+
+.date {
+  color: var(--light-text);
+  font-size: 0.9em;
+  margin-top: 2px;
+  display: block;
+}
+
+.card-details p {
+  margin: 8px 0;
+  font-size: 0.95em;
+  color: var(--text-color);
+}
+
+.card-details p strong {
+  color: var(--light-text);
+  font-weight: 500;
+}
+
+.tags {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--border-color);
+  /* Легка розділяюча лінія */
+}
+
+.tag {
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  /* Для обтікання, якщо багато тегів */
+  display: inline-block;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.tag:hover {
+  background-color: #bbdefb;
+}
+
+/* Медіазапити для мобільних пристроїв */
+@media (max-width: 768px) {
+  .page-container {
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .desktop-layout {
+    display: block;
+    /* Сховати flex-розмітку */
+    padding: 0;
+    margin: 0;
+  }
+
+  .sidebar {
+    display: none;
+    /* Сховати десктопний сайдбар */
+  }
+
+  .mobile-filter {
+    display: block;
+    /* Показати мобільний фільтр */
+    border-radius: 0;
+    margin-bottom: 0;
+  }
+
+  .main-content {
+    padding: 20px 15px;
+    /* Забезпечити відступи для контенту */
+  }
+
+  .transactions-list {
+    max-width: 100%;
+    /* Займає всю доступну ширину на мобільних */
+  }
+
+  .page-title {
+    font-size: 1.8em;
+    margin-bottom: 25px;
+  }
+
+  .transaction-card {
+    padding: 15px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    /* Дозволяє елементам переноситись */
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .category-icon {
+    font-size: 1.8em;
+  }
+
+  .merchant-name {
+    font-size: 1.15em;
+  }
+
+  .amount {
+    font-size: 1.3em;
+  }
+
+  .date {
+    font-size: 0.85em;
+  }
+}
+
+.modal {
+  display: none;
+  /* Hidden by default */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1000;
+  /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  /* Full width */
+  height: 100%;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: rgba(0, 0, 0, 0.6);
+  /* Black w/ opacity */
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 10% auto;
+  /* 10% from the top and centered */
+  padding: 30px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.close-button {
+  color: #aaa;
+  position: absolute;
+  top: 15px;
+  right: 25px;
+  font-size: 32px;
+  font-weight: bold;
+  transition: color 0.2s ease-in-out;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: #333;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#modal-details {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#modal-details h3 {
+  margin-top: 0;
+  font-size: 1.5em;
+  color: var(--text-color);
+}
+
+#modal-details p {
+  font-size: 1.1em;
+  line-height: 1.7;
+  color: var(--light-text);
+}
+
+#modal-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+#modal-photos img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+#modal-photos img:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-hover);
+}
+
+.modal-footer {
+  margin-top: 20px;
+  text-align: right;
+}
+
+#save-changes-btn {
+  display: none;
+  /* Hidden by default */
+  width: auto;
+  padding: 10px 25px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1em;
+}
+
+.modal-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1em;
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Styles for editable fields in modal */
+.editable-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+
+.editable-label {
+  font-weight: 600;
+  color: var(--light-text);
+  flex: 0 0 150px;
+  /* Fixed width for labels */
+  padding-right: 15px;
+  text-align: right;
+}
+
+.editable-value {
+  flex: 1;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease-in-out;
+  min-height: 28px;
+  /* to match input height */
+}
+
+.editable-value.textarea-value {
+  white-space: pre-wrap;
+}
+
+.editable-value:hover {
+  background-color: var(--background-dark);
+}
+
+/* Override default modal input width */
+.editable-field .editable-input {
+  width: auto;
+  /* Override width: 100% */
+  flex: 1;
+  /* Take available space */
+  margin-bottom: 0;
+  /* Remove margin from .modal-input */
+  font-size: 1em;
+  /* Match surrounding text */
+  padding: 8px 10px;
+  /* Make it a bit bigger */
+}
+
+.editable-field .modal-textarea.editable-input {
+  min-height: 60px;
+}
+
+/* Custom Multi-select Dropdown */
+.multi-select-container {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--background-light);
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  min-height: 40px;
+}
+
+.multi-select-container:focus-within {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  background-color: var(--card-bg);
+}
+
+.multi-select-tag {
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.multi-select-tag-remove {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.multi-select-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex-grow: 1;
+  font-size: 1em;
+  padding: 5px;
+}
+
+.multi-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+.multi-select-container:focus-within .multi-select-dropdown {
+  display: block;
+}
+
+.multi-select-option {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.multi-select-option:hover {
+  background-color: var(--background-dark);
+}
+
+.button-container {
+  margin-bottom: 20px;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+#import-modal .modal-content {
+  max-width: 800px;
+}
+
+.tab-container {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab.active {
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+#parsed-transactions-container {
+  margin-top: 20px;
+}
+
+#parsed-transactions-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#parsed-transactions-container th,
+#parsed-transactions-container td {
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  text-align: left;
+}
+
+#parsed-transactions-container th {
+  background-color: var(--background-dark);
+}
+
+#parsed-transactions-container input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.create-btn-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.create-btn {
+  padding: 15px 25px;
+  border-radius: 30px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  font-size: 1.2em;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.create-btn-container:hover .create-btn {
+  background-color: var(--primary-hover);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.create-btn-content {
+  display: none;
+  flex-direction: column;
+  margin-right: 15px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  overflow: hidden;
+  width: 180px;
+  animation: slide-in-from-left 0.2s ease-out;
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.create-btn-container:hover .create-btn-content {
+  display: flex;
+}
+
+.create-btn-content a {
+  color: var(--text-color);
+  padding: 12px 20px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+  transition: background-color 0.2s ease-in-out;
+  font-weight: 500;
+}
+
+.create-btn-content a:hover {
+  background-color: var(--background-dark);
+}
+
+.amount-filter-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.amount-filter-inputs input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1em;
+  color: var(--text-color);
+  background-color: var(--background-light);
+  transition: all 0.2s ease-in-out;
+}
+
+.amount-filter-inputs input[type="number"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  background-color: var(--card-bg);
+}
+
+.amount-filter-inputs span {
+  font-weight: 500;
+  color: var(--light-text);
+}
+
+.double-slider-container {
+  position: relative;
+  height: 20px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.double-slider-track,
+.double-slider-range {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.double-slider-track {
+  background-color: var(--background-dark);
+  width: 100%;
+}
+
+.double-slider-range {
+  background-color: var(--primary-color);
+}
+
+.double-slider-thumb {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 2;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}

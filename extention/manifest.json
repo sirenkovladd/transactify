@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Transaction Fetcher",
+  "version": "1.0",
+  "description": "Fetches transactions and sends them to an external server.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "host_permissions": [
+    "https://your-external-server.com/*"
+  ]
+}
