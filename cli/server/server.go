@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -377,7 +378,11 @@ func (db WithDB) AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	connStr := "postgres://user:password@localhost:5432/mydb?sslmode=disable"
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	dbname := os.Getenv("POSTGRES_DB")
+	db_domain := os.Getenv("POSTGRES_DOMAIN")
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, password, db_domain, dbname)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)

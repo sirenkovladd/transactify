@@ -12,3 +12,7 @@ run = [
 ]
 outputs = ["dist/*"]
 sources = ["client/*"]
+
+[tools]
+bun = "latest"
+go = "latest"
