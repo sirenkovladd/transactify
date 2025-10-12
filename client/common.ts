@@ -21,6 +21,7 @@ export const categories = van.state<string[]>([]);
 export const merchants = van.derive(() => [...new Set(transactions.val.map(t => t.merchant))]);
 export const cards = van.derive(() => [...new Set(transactions.val.map(t => t.card))]);
 export const persons = van.derive(() => [...new Set(transactions.val.map(t => t.personName))]);
+export const tags = van.derive(() => [...new Set(transactions.val.flatMap(t => t.tags))]);
 export const error = van.state('');
 export const loading = van.state(true);
 
@@ -32,7 +33,10 @@ export const merchantFilter = van.state<string[]>([]);
 export const cardFilter = van.state<string[]>([]);
 export const personFilter = van.state<string[]>([]);
 export const categoryFilter = van.state<string[]>([]);
+export const tagFilter = van.state<string[]>([]);
 export const groupedOption = van.state<keyof typeof groupedOptions>('category');
+export const minDate = van.state<string | null>(null);
+export const maxDate = van.state<string | null>(null);
 
 const delayedAmountFilter = van.state(amountFilter.rawVal);
 van.derive(() => {
@@ -60,13 +64,16 @@ export const filteredTransactions = van.derive(() => {
       (merchantFilter.val.length === 0 || merchantFilter.val.includes(tr.merchant)) &&
       (cardFilter.val.length === 0 || cardFilter.val.includes(tr.card)) &&
       (personFilter.val.length === 0 || personFilter.val.includes(tr.personName)) &&
-      (categoryFilter.val.length === 0 || categoryFilter.val.includes(tr.category))
+      (categoryFilter.val.length === 0 || categoryFilter.val.includes(tr.category)) &&
+      (tagFilter.val.length === 0 || tagFilter.val.every(tag => tr.tags.includes(tag)))
     );
   });
 });
 
 
-(async () => {
+export async function fetchTransactions() {
+  loading.val = true;
+  error.val = '';
   try {
     const [transactionsResponse, categoriesResponse] = await Promise.all([
       fetch("/api/transactions"),
@@ -80,23 +87,20 @@ export const filteredTransactions = van.derive(() => {
       throw new Error('Failed to fetch categories');
     }
 
-    try {
-      const transactionsData = await transactionsResponse.json();
-      transactions.val = transactionsData;
+    const transactionsData = await transactionsResponse.json();
+    transactions.val = transactionsData;
 
-      const categoriesData = await categoriesResponse.json();
-      categories.val = categoriesData;
+    const categoriesData = await categoriesResponse.json();
+    categories.val = categoriesData;
 
-      loading.val = false;
-    } catch (e: any) {
-      error.val = e.message;
-      loading.val = false;
-    }
   } catch (e: any) {
     error.val = e.message;
+  } finally {
     loading.val = false;
   }
-})();
+}
+
+fetchTransactions();
 
 
 van.derive(() => {
@@ -119,8 +123,12 @@ van.derive(() => {
         maxAmount = amount;
       }
     }
-    dateStartFilter.val = startDate.toISOString().split('T')[0] as string;
-    dateEndFilter.val = endDate.toISOString().split('T')[0] as string;
+    const minDateStr = startDate.toISOString().split('T')[0] as string;
+    const maxDateStr = endDate.toISOString().split('T')[0] as string;
+    minDate.val = minDateStr;
+    maxDate.val = maxDateStr;
+    dateStartFilter.val = minDateStr;
+    dateEndFilter.val = maxDateStr;
     amountFilter.val = { min: 0, max: maxAmount };
   }
 })

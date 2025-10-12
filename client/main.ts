@@ -3,8 +3,9 @@ import { setupAdding } from "./adding.ts";
 import { convertTransaction, error, filteredTransactions, loading } from './common.ts';
 import { setupFilters } from "./filter.ts";
 import { setupGroup } from "./group.ts";
+import { openTagModal, setupTagModal } from "./tags.ts";
 
-const { div } = van.tags;
+const { div, span } = van.tags;
 
 function main() {
 
@@ -20,6 +21,24 @@ function main() {
       return div(filteredTransactions.val.map(convertTransaction))
     })
   }
+
+  const transactionsActions = document.querySelector('.transactions-actions');
+  if (transactionsActions) {
+    van.add(transactionsActions,
+      span({
+        class: 'add-tag-btn',
+        onclick: () => {
+          const ids = filteredTransactions.val.map(t => t.id);
+          if (ids.length > 0) {
+            openTagModal(ids, 'Add Tag to All Filtered');
+          } else {
+            alert('No transactions to tag.');
+          }
+        }
+      }, '+ Add Tag to All Filtered')
+    );
+  }
+
   // Main tabs logic
   const mainTabs = document.querySelectorAll('.main-tab');
   const mainTabContents = document.querySelectorAll('.main-tab-content');
@@ -59,6 +78,7 @@ function main() {
   setupAdding();
   setupFilters();
   setupGroup();
+  setupTagModal();
 }
 
 document.addEventListener("DOMContentLoaded", main);

@@ -1,9 +1,12 @@
 import van, { type State } from "vanjs-core";
-import { amountFilter, cardFilter, cards, categories, categoryFilter, dateEndFilter, dateStartFilter, merchantFilter, merchants, personFilter, persons, transactions } from './common.ts';
+import { amountFilter, cardFilter, cards, categories, categoryFilter, dateEndFilter, dateStartFilter, merchantFilter, merchants, personFilter, persons, tagFilter, tags, transactions, minDate, maxDate } from './common.ts';
+
+declare const DateRangePicker: any;
 
 const { div, span, input } = van.tags;
 
 function createMultiSelect(container: HTMLElement, optionsState: State<string[]>, selectedState: State<string[]>) {
+  container.classList.add('multi-select-container');
   const searchInput = input({ class: 'multi-select-input', placeholder: 'Search...' });
   const dropdown = div({ class: 'multi-select-dropdown' });
   const tagsContainer = div();
@@ -198,9 +201,45 @@ export function setupFilters() {
   setupDoubleSlider('double-slider-desktop', 'thumb-min-desktop', 'thumb-max-desktop', 'double-slider-range-desktop');
   setupDoubleSlider('double-slider-mobile', 'thumb-min-mobile', 'thumb-max-mobile', 'double-slider-range-mobile');
 
-  // Text and Date filters
-  bindTextInputs('date-start', 'date-start-mobile', dateStartFilter, 'change');
-  bindTextInputs('date-end', 'date-end-mobile', dateEndFilter, 'change');
+  const initDateRangePicker = (containerId: string, startState: State<string>, endState: State<string>) => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    const picker = new DateRangePicker(el, {
+      format: 'yyyy-mm-dd',
+      autohide: true,
+      todayHighlight: true,
+    });
+
+    van.derive(() => {
+      if (minDate.val && maxDate.val) {
+        picker.setOptions({
+          minDate: minDate.val,
+          maxDate: maxDate.val,
+        });
+      }
+    });
+
+    el.addEventListener('changeDate', () => {
+      const [start, end] = picker.getDates('yyyy-mm-dd');
+      if (start !== startState.val) {
+        startState.val = start;
+      }
+      if (end !== endState.val) {
+        endState.val = end;
+      }
+    });
+
+    van.derive(() => {
+      const [currentStart, currentEnd] = picker.getDates('yyyy-mm-dd');
+      if (startState.val !== currentStart || endState.val !== currentEnd) {
+        picker.setDates(startState.val, endState.val);
+      }
+    });
+  };
+
+  initDateRangePicker('date-range-desktop', dateStartFilter, dateEndFilter);
+  initDateRangePicker('date-range-mobile', dateStartFilter, dateEndFilter);
 
   createMultiSelect(document.getElementById('merchant')!, merchants, merchantFilter);
   createMultiSelect(document.getElementById('merchant-mobile')!, merchants, merchantFilter);
@@ -210,4 +249,6 @@ export function setupFilters() {
   createMultiSelect(document.getElementById('person-mobile')!, persons, personFilter);
   createMultiSelect(document.getElementById('category')!, categories, categoryFilter);
   createMultiSelect(document.getElementById('category-mobile')!, categories, categoryFilter);
+  createMultiSelect(document.getElementById('tag')!, tags, tagFilter);
+  createMultiSelect(document.getElementById('tag-mobile')!, tags, tagFilter);
 }
