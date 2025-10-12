@@ -109,8 +109,7 @@ body {
 .desktop-layout {
   display: flex;
   width: 100%;
-  max-width: 1400px;
-  /* Обмеження ширини для центрування */
+  max-width: 1700px;
   margin: 0 auto;
   padding: 20px;
   gap: 30px;
@@ -394,6 +393,56 @@ body {
   background-color: #bbdefb;
 }
 
+.stats-sidebar {
+  flex: 0 0 200px;
+  width: 200px;
+  padding: 25px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  height: fit-content;
+  position: sticky;
+  top: 20px;
+  align-self: flex-start;
+}
+
+.stats-sidebar h3 {
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-top: 20px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.stats-sidebar h3:first-child {
+  margin-top: 0;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 1em;
+}
+
+.summary-item .label {
+  font-weight: 500;
+  color: var(--light-text);
+}
+
+.summary-item .value {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.pie-chart-container {
+  width: 100%;
+  height: 200px;
+  position: relative;
+}
+
 /* Медіазапити для мобільних пристроїв */
 @media (max-width: 768px) {
   .page-container {
@@ -408,7 +457,8 @@ body {
     margin: 0;
   }
 
-  .sidebar {
+  .sidebar,
+  .stats-sidebar {
     display: none;
     /* Сховати десктопний сайдбар */
   }
@@ -1130,4 +1180,61 @@ summary {
   font-size: 1em;
   padding: 5px;
   min-width: 100px;
+}
+
+#login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--background-light);
+}
+
+#login-form {
+  width: 100%;
+  max-width: 320px;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  text-align: center;
+}
+
+#login-form h2 {
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  color: var(--text-color);
+}
+
+#login-form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 1em;
+}
+
+#login-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out;
+}
+
+#login-form button:hover {
+  background-color: var(--primary-hover);
+}
+
+#login-error {
+  color: red;
+  margin-top: 10px;
+  min-height: 1.2em;
 }

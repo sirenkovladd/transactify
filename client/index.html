@@ -10,13 +10,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/datepicker-full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="main.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+  <div id="login-container">
+    <form id="login-form">
+      <h2>Login</h2>
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+      <p id="login-error"></p>
+    </form>
+  </div>
 
-  <div class="page-container">
+  <div class="page-container" style="display: none;">
     <div class="mobile-filter">
       <h2>Фільтри</h2>
       <div class="filter-group">
@@ -128,6 +138,23 @@
           <div class="transactions-list"></div>
         </div>
       </main>
+
+      <aside class="stats-sidebar">
+        <h3>Summary</h3>
+        <div id="summary-content"></div>
+        <h3>By Category</h3>
+        <div class="pie-chart-container">
+          <canvas id="category-chart"></canvas>
+        </div>
+        <h3>By Tags</h3>
+        <div class="pie-chart-container">
+          <canvas id="tags-chart"></canvas>
+        </div>
+        <h3>By Person</h3>
+        <div class="pie-chart-container">
+          <canvas id="person-chart"></canvas>
+        </div>
+      </aside>
     </div>
   </div>
 

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"code.sirenko.ca/transaction/src"
 
@@ -176,9 +179,9 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 type TagPayload struct {
-	TransactionIDs []int64  `json:"transaction_ids"`
-	Tag            string   `json:"tag"`
-	Action         string   `json:"action"` // "add" or "remove"
+	TransactionIDs []int64 `json:"transaction_ids"`
+	Tag            string  `json:"tag"`
+	Action         string  `json:"action"` // "add" or "remove"
 }
 
 func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request) {
@@ -272,6 +275,107 @@ func (db WithDB) GetCategories(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func generateSecureToken(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+type LoginPayload struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type User struct {
+	ID           int
+	Username     string
+	HashPassword string
+}
+
+func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var payload LoginPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user := &User{}
+	err := db.db.QueryRow("SELECT user_id, username, hash_password FROM users WHERE username = $1", payload.Username).Scan(&user.ID, &user.Username, &user.HashPassword)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	match, err := src.ComparePasswordAndHash(payload.Password, user.HashPassword)
+	if err != nil {
+		log.Printf("Error comparing password for user %s: %v", payload.Username, err)
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	if !match {
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := generateSecureToken(32)
+	if err != nil {
+		log.Printf("Error generating session token for user %s: %v", payload.Username, err)
+		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.db.Exec("INSERT INTO sessions (user_id, session_code, device, last_ip) VALUES ($1, $2, $3, $4)", user.ID, token, r.UserAgent(), r.RemoteAddr)
+	if err != nil {
+		log.Printf("Error creating session for user %s: %v", payload.Username, err)
+		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+func (db WithDB) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			http.Error(w, "Bearer token required", http.StatusUnauthorized)
+			return
+		}
+
+		var userID int
+		var lastUsed time.Time
+		err := db.db.QueryRow("SELECT user_id, last_used FROM sessions WHERE session_code = $1", tokenString).Scan(&userID, &lastUsed)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "Invalid session token", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	connStr := "postgres://user:password@localhost:5432/mydb?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
@@ -296,10 +400,11 @@ func main() {
 	mux.HandleFunc("/main.js", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./client/main.js")
 	})
-	mux.HandleFunc("/api/transactions", router.GetTransactions)
-	mux.HandleFunc("/api/transaction/update", router.UpdateTransaction)
-	mux.HandleFunc("/api/transactions/tags", router.ManageTags)
-	mux.HandleFunc("/api/categories", router.GetCategories)
+	mux.HandleFunc("/api/login", router.Login)
+	mux.Handle("/api/transactions", router.AuthMiddleware(http.HandlerFunc(router.GetTransactions)))
+	mux.Handle("/api/transaction/update", router.AuthMiddleware(http.HandlerFunc(router.UpdateTransaction)))
+	mux.Handle("/api/transactions/tags", router.AuthMiddleware(http.HandlerFunc(router.ManageTags)))
+	mux.Handle("/api/categories", router.AuthMiddleware(http.HandlerFunc(router.GetCategories)))
 
 	log.Print("listening on :8080...")
 	err = http.ListenAndServe(":8080", LoggerMiddleware(mux))

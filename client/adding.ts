@@ -115,6 +115,7 @@ export function setupAdding() {
     const parseWealthsimpleBtn = document.getElementById('parse-wealthsimple-btn');
 
     const parsedTransactionsContainer = document.getElementById('parsed-transactions-container');
+    // TODO add scan receipt
 
     const parseData = (parser: (data: string) => any[]) => {
       return () => {
