@@ -9,6 +9,7 @@ export type Transaction = {
   merchant: string;
   personName: string;
   amount: number;
+  currency: string;
   occurredAt: string;
   card: string;
   tags: string[];
@@ -57,6 +58,40 @@ van.derive(() => {
     delayedAmountFilter.val = amount;
   }, 50);
 });
+
+export type NewTransaction = Omit<Transaction, 'id' | 'photos'>;
+
+export async function addTransactions(newTransactions: NewTransaction[]) {
+  if (!token.val) {
+    error.val = 'Not logged in';
+    return;
+  }
+  try {
+    const response = await fetch('/api/transactions/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.val}`
+      },
+      body: JSON.stringify(newTransactions)
+    });
+
+    if (response.status === 401) {
+      token.val = '';
+      error.val = 'Session expired. Please log in again.';
+      return;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to add transactions: ${errorText}`);
+    }
+
+    await fetchTransactions(); // Refresh the transaction list
+  } catch (e: any) {
+    error.val = e.message;
+  }
+}
 
 export const filteredTransactions = van.derive(() => {
   return transactions.val.filter(tr => {
@@ -153,7 +188,7 @@ van.derive(() => {
       }
     }
     const minDateStr = startDate.toISOString().split('T')[0] as string;
-    const maxDateStr = endDate.toISOString().split('T')[0] as string;
+    const maxDateStr = new Date(endDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] as string;
     minDate.val = minDateStr;
     maxDate.val = maxDateStr;
     dateStartFilter.val = minDateStr;

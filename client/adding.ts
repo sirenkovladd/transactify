@@ -1,5 +1,5 @@
 import van from "vanjs-core";
-import { categories } from './common.ts';
+import { addTransactions, categories, type NewTransaction } from './common.ts';
 
 const { div, span, p, h3, strong, table, thead, tbody, tr, th, td, input, button, option, select } = van.tags;
 
@@ -70,7 +70,44 @@ function renderParsedTransactions(data: any[], container: HTMLElement) {
       )
     )
   );
-  van.add(container, div(allTagsInput, addTagButton), transactionTable);
+
+  const saveButton = button({
+    onclick: () => {
+      const transactionsToSave: NewTransaction[] = [];
+      const rows = transactionTable.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input, select');
+        const occurredAt = (inputs[0] as HTMLInputElement).value;
+        const merchant = (inputs[1] as HTMLInputElement).value;
+        const amount = parseFloat((inputs[2] as HTMLInputElement).value);
+        const category = (inputs[3] as HTMLSelectElement).value;
+        const tags = (inputs[4] as HTMLInputElement).value.split(',').map(t => t.trim()).filter(t => t);
+
+        transactionsToSave.push({
+          occurredAt,
+          merchant,
+          amount,
+          category,
+          tags,
+          currency: 'CAD', // Defaulting currency
+          personName: '', // Defaulting personName
+          card: '', // Defaulting card
+        });
+      });
+
+      if (transactionsToSave.length > 0) {
+        addTransactions(transactionsToSave).then(() => {
+          const importModal = document.getElementById('import-modal');
+          if (importModal) {
+            importModal.style.display = 'none';
+          }
+          container.innerHTML = ''; // Clear the parsed transactions
+        });
+      }
+    }
+  }, 'Save Imported Transactions');
+
+  van.add(container, div(allTagsInput, addTagButton), transactionTable, div(saveButton));
 }
 
 export function setupAdding() {
@@ -163,16 +200,21 @@ export function setupAdding() {
     };
 
     saveNewTransactionBtn.onclick = () => {
-      const newTransaction = {
-        date: (document.getElementById('new-transaction-date') as HTMLInputElement).value,
+      const newTransaction: NewTransaction = {
+        occurredAt: (document.getElementById('new-transaction-date') as HTMLInputElement).value,
         merchant: (document.getElementById('new-transaction-merchant') as HTMLInputElement).value,
-        amount: (document.getElementById('new-transaction-amount') as HTMLInputElement).value,
-        person: (document.getElementById('new-transaction-person') as HTMLInputElement).value,
+        amount: parseFloat((document.getElementById('new-transaction-amount') as HTMLInputElement).value),
+        personName: (document.getElementById('new-transaction-person') as HTMLInputElement).value,
         card: (document.getElementById('new-transaction-card') as HTMLInputElement).value,
         category: (document.getElementById('new-transaction-category') as HTMLSelectElement).value,
-        tags: (document.getElementById('new-transaction-tags') as HTMLInputElement).value.split(',').map(tag => tag.trim()),
+        tags: (document.getElementById('new-transaction-tags') as HTMLInputElement).value.split(',').map(tag => tag.trim()).filter(t => t),
+        currency: 'CAD', // Default currency
       };
-      createNewTransactionModal.style.display = 'none';
+
+      addTransactions([newTransaction]).then(() => {
+        createNewTransactionModal.style.display = 'none';
+        // TODO: Clear form fields
+      });
     }
 
     van.derive(() => {

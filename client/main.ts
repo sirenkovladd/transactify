@@ -129,8 +129,8 @@ function setupStats() {
   });
 }
 
-async function login(username, password) {
-  const loginError = document.getElementById('login-error');
+async function login(username: string, password: string) {
+  const loginError = document.getElementById('login-error')!;
   try {
     const response = await fetch('/api/login', {
       method: 'POST',
@@ -146,14 +146,14 @@ async function login(username, password) {
     const data = await response.json();
     token.val = data.token;
     loginError.textContent = '';
-  } catch (error) {
+  } catch (error: any) {
     loginError.textContent = error.message;
   }
 }
 
 function setupLogin() {
   const loginForm = document.getElementById('login-form');
-  loginForm.addEventListener('submit', (e) => {
+  loginForm?.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = (document.getElementById('username') as HTMLInputElement).value;
     const password = (document.getElementById('password') as HTMLInputElement).value;
@@ -162,7 +162,7 @@ function setupLogin() {
 }
 
 function main() {
-  const loginContainer = document.getElementById('login-container');
+  const loginContainer = document.getElementById('login-container') as HTMLElement;
   const pageContainer = document.querySelector('.page-container') as HTMLElement;
 
   van.derive(() => {
