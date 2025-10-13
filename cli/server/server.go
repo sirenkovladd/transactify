@@ -58,7 +58,8 @@ func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request) {
 		ORDER BY t.occurred_at DESC
 	`)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error querying database: %v", err)
+		http.Error(w, "Failed to query database", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -74,7 +75,8 @@ func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request) {
 			t.Tags = []string{}
 		}
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error scanning row: %v", err)
+			http.Error(w, "Failed to scan row", http.StatusInternalServerError)
 			return
 		}
 		transactions = append(transactions, t)
@@ -171,7 +173,8 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
 
 		_, err := db.db.Exec(finalQuery, params...)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to update transaction: %v", err), http.StatusInternalServerError)
+			log.Printf("Error updating transaction %d: %v", payload.ID, err)
+			http.Error(w, "Failed to update transaction", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -213,7 +216,8 @@ func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request) {
 	// Get or create tag ID
 	err = tx.QueryRow("INSERT INTO tags (tag_name) VALUES ($1) ON CONFLICT (tag_name) DO UPDATE SET tag_name = EXCLUDED.tag_name RETURNING tag_id", payload.Tag).Scan(&tagID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get or create tag: %v", err), http.StatusInternalServerError)
+		log.Printf("Failed to get or create tag %s: %v", payload.Tag, err)
+		http.Error(w, "Failed to get or create tag", http.StatusInternalServerError)
 		return
 	}
 
@@ -228,7 +232,8 @@ func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request) {
 		for _, transactionID := range payload.TransactionIDs {
 			_, err := stmt.Exec(transactionID, tagID)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to add tag to transaction %d: %v", transactionID, err), http.StatusInternalServerError)
+				log.Printf("Failed to add tag to transaction %d: %v", transactionID, err)
+				http.Error(w, "Failed to add tag to transaction", http.StatusInternalServerError)
 				return
 			}
 		}
@@ -243,7 +248,8 @@ func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request) {
 		for _, transactionID := range payload.TransactionIDs {
 			_, err := stmt.Exec(transactionID, tagID)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to remove tag from transaction %d: %v", transactionID, err), http.StatusInternalServerError)
+				log.Printf("Failed to remove tag from transaction %d: %v", transactionID, err)
+				http.Error(w, "Failed to remove tag from transaction", http.StatusInternalServerError)
 				return
 			}
 		}
@@ -314,7 +320,8 @@ func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error querying database for user %s: %v", payload.Username, err)
+		http.Error(w, "Failed to query database", http.StatusInternalServerError)
 		return
 	}
 
@@ -370,7 +377,8 @@ func (db WithDB) AuthMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Invalid session token", http.StatusUnauthorized)
 				return
 			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error querying database for session token %s: %v", tokenString, err)
+			http.Error(w, "Failed to query database", http.StatusInternalServerError)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -382,8 +390,8 @@ func main() {
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
 	dbname := os.Getenv("POSTGRES_DB")
-	db_domain := os.Getenv("POSTGRES_DOMAIN")
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, password, db_domain, dbname)
+	db_host := os.Getenv("POSTGRES_HOST")
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, password, db_host, dbname)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
