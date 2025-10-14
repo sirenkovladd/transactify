@@ -4,11 +4,51 @@ import { addTransactions, categories, type NewTransaction } from './common.ts';
 const { div, span, p, h3, strong, table, thead, tbody, tr, th, td, input, button, option, select } = van.tags;
 
 function parseCSV(data: string): any[] {
-  // TODO
-  return [
-    { datetime: '2024-01-01T12:00:00', merchant: 'CSV Merchant 1', amount: 100, category: 'Category 1', tags: 'tag1, tag2' },
-    { datetime: '2024-01-02T13:00:00', merchant: 'CSV Merchant 2', amount: 200, category: 'Category 2', tags: 'tag3' },
-  ];
+  const lines = data.trim().split('\n');
+  if (lines.length < 1) {
+    return [];
+  }
+  const header = lines.shift()!.split(',').map(h => h.trim().toLowerCase());
+
+  const transactions = lines.map(line => {
+    const values = line.split(',');
+    const row: { [key: string]: string } = {};
+    header.forEach((key, i) => {
+      row[key] = values[i] ? values[i].trim() : '';
+    });
+    return row;
+  });
+
+  return transactions.map(t => {
+    const amountStr = t.amount || t.debit || t.credit;
+    let amount = parseFloat(amountStr || '0');
+    if (t.debit && amount > 0) {
+      amount = -amount;
+    }
+
+    // Try to convert date to datetime-local format if possible
+    let datetime = t.datetime || t.date || '';
+    if (datetime && !datetime.includes('T')) {
+      // Assuming date is in a format that can be parsed by Date, like YYYY-MM-DD
+      const d = new Date(datetime);
+      if (!isNaN(d.getTime())) {
+        // Format to 'YYYY-MM-DDTHH:mm'
+        const year = d.getFullYear();
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const day = d.getDate().toString().padStart(2, '0');
+        datetime = `${year}-${month}-${day}T00:00`;
+      }
+    }
+
+
+    return {
+      datetime: datetime,
+      merchant: t.merchant || t.description || '',
+      amount: amount || 0,
+      category: t.category || '',
+      tags: t.tags || '',
+    };
+  });
 }
 
 function parseCIBC(data: string): any[] {

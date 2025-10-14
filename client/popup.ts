@@ -16,8 +16,9 @@ export function transactionPopup(tr: Transaction) {
   const modalDetails = document.getElementById('modal-details') as HTMLElement;
   const modalPhotos = document.getElementById('modal-photos') as HTMLElement;
   const saveButton = document.getElementById('save-changes-btn') as HTMLElement;
+  const deleteButton = document.getElementById('delete-transaction-btn') as HTMLElement;
 
-  if (modal && modalDetails && modalPhotos && saveButton) {
+  if (modal && modalDetails && modalPhotos && saveButton && deleteButton) {
     // Create a deep copy for editing
     const editableTr = JSON.parse(JSON.stringify(tr));
 
@@ -260,6 +261,7 @@ export function transactionPopup(tr: Transaction) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
           body: JSON.stringify(editableTr),
         });
@@ -279,6 +281,34 @@ export function transactionPopup(tr: Transaction) {
       } catch (e: any) {
         console.error('Save failed:', e);
         alert(`Error saving: ${e.message}`);
+      }
+    };
+
+    deleteButton.onclick = async () => {
+      if (!confirm('Are you sure you want to delete this transaction?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/transaction/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ id: tr.id }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to delete transaction: ${errorText}`);
+        }
+
+        transactions.val = transactions.val.filter(t => t.id !== tr.id);
+        modal.style.display = 'none';
+      } catch (e: any) {
+        console.error('Delete failed:', e);
+        alert(`Error deleting: ${e.message}`);
       }
     };
 

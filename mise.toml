@@ -2,7 +2,7 @@
 '_'.file = ".env"
 
 [tasks.dump_schema]
-run = "pg_dump -s $DATABASE_URL > schema.sql"
+run = "pg_dump -s postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB > schema.sql"
 
 [tasks.build_client]
 # env = { NODE_ENV = "production" }

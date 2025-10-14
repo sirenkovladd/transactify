@@ -615,8 +615,14 @@ body {
 }
 
 .modal-footer {
-  margin-top: 20px;
-  text-align: right;
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.delete-btn {
+  background-color: #f44336;
 }
 
 #save-changes-btn {

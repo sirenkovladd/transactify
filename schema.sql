@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 4ChJC6ZHvmZsLsF9MNWrJNcwQEacmCvEzInhK6djgAydo4DzFn7aFbCITQwjYk0
+\restrict OxF44Lfc98uejhe66mWVc5czwh3kIXD7ZLuk81Ji1e3xOcWi79akHKkOJIczH0r
 
 -- Dumped from database version 14.19 (Debian 14.19-1.pgdg13+1)
 -- Dumped by pg_dump version 18.0
@@ -41,7 +41,7 @@ CREATE TABLE public.sessions (
     user_id integer,
     session_code character varying(255) NOT NULL,
     device character varying(255),
-    last_ip inet,
+    last_ip text,
     last_used timestamp with time zone DEFAULT now()
 );
 
@@ -126,10 +126,10 @@ CREATE TABLE public.transactions (
     currency character varying(3) NOT NULL,
     occurred_at timestamp without time zone NOT NULL,
     merchant character varying(255) NOT NULL,
-    person_name character varying(255) NOT NULL,
     card character varying(15),
     category character varying(20),
-    details text
+    details text,
+    user_id integer NOT NULL
 );
 
 
@@ -295,6 +295,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: transactions fk_user; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
 -- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
 --
 
@@ -330,5 +338,5 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 4ChJC6ZHvmZsLsF9MNWrJNcwQEacmCvEzInhK6djgAydo4DzFn7aFbCITQwjYk0
+\unrestrict OxF44Lfc98uejhe66mWVc5czwh3kIXD7ZLuk81Ji1e3xOcWi79akHKkOJIczH0r
 

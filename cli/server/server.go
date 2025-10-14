@@ -17,12 +17,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
 func LoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// log.Printf("%s %s", r.Method, r.URL.Path)
 		timeStart := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s - %s - %dms", r.Method, r.URL.Path, r.RemoteAddr, time.Since(timeStart).Milliseconds())
+		lrw := &loggingResponseWriter{w, http.StatusOK}
+		next.ServeHTTP(lrw, r)
+		log.Printf("%s %s - %s - %dms - HTTP-%d", r.Method, r.URL.Path, r.RemoteAddr, time.Since(timeStart).Milliseconds(), lrw.statusCode)
 	})
 }
 
@@ -43,7 +53,7 @@ type Transaction struct {
 	Tags       []string `json:"tags"`
 }
 
-func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request) {
+func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request, userId int) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -51,14 +61,16 @@ func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.db.Query(`
 		SELECT
-			t.transaction_id, t.amount, t.currency, t.occurred_at, t.merchant, t.person_name, t.card, t.category, t.details,
+			t.transaction_id, t.amount, t.currency, t.occurred_at, t.merchant, u.person_name, t.card, t.category, t.details,
 			COALESCE(STRING_AGG(tags.tag_name, ',' ORDER BY tags.tag_name), '') AS tags
 		FROM transactions t
+		JOIN users u ON t.user_id = u.user_id
 		LEFT JOIN transaction_tags ON t.transaction_id = transaction_tags.transaction_id
 		LEFT JOIN tags ON transaction_tags.tag_id = tags.tag_id
-		GROUP BY t.transaction_id
+		WHERE t.user_id = $1
+		GROUP BY t.transaction_id, u.person_name
 		ORDER BY t.occurred_at DESC
-	`)
+	`, userId)
 	if err != nil {
 		log.Printf("Error querying database: %v", err)
 		http.Error(w, "Failed to query database", http.StatusInternalServerError)
@@ -96,14 +108,13 @@ type UpdateTransactionPayload struct {
 	Currency   *string  `json:"currency"`
 	OccurredAt *string  `json:"occurredAt"`
 	Merchant   *string  `json:"merchant"`
-	PersonName *string  `json:"personName"`
 	Card       *string  `json:"card"`
 	Category   *string  `json:"category"`
 	Details    *string  `json:"details"`
 	Tags       []string `json:"tags"`
 }
 
-func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
+func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userId int) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -139,11 +150,6 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
 	if payload.OccurredAt != nil {
 		query.WriteString(fmt.Sprintf("occurred_at = $%d, ", paramId))
 		params = append(params, *payload.OccurredAt)
-		paramId++
-	}
-	if payload.PersonName != nil {
-		query.WriteString(fmt.Sprintf("person_name = $%d, ", paramId))
-		params = append(params, *payload.PersonName)
 		paramId++
 	}
 	if payload.Card != nil {
@@ -184,19 +190,61 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+type DeleteTransactionPayload struct {
+	ID int64 `json:"id"`
+}
+
+func (db WithDB) DeleteTransaction(w http.ResponseWriter, r *http.Request, userId int) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var payload DeleteTransactionPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if payload.ID == 0 {
+		http.Error(w, "Transaction ID is required", http.StatusBadRequest)
+		return
+	}
+
+	res, err := db.db.Exec("DELETE FROM transactions WHERE transaction_id = ", payload.ID)
+	if err != nil {
+		log.Printf("Error deleting transaction %d: %v", payload.ID, err)
+		http.Error(w, "Failed to delete transaction", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error getting rows affected for transaction %d: %v", payload.ID, err)
+		http.Error(w, "Failed to delete transaction", http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, "Transaction not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 type AddTransactionPayload struct {
 	Amount     float64  `json:"amount"`
 	Currency   string   `json:"currency"`
 	OccurredAt string   `json:"occurredAt"`
 	Merchant   string   `json:"merchant"`
-	PersonName string   `json:"personName"`
 	Card       string   `json:"card"`
 	Category   string   `json:"category"`
 	Details    *string  `json:"details"`
 	Tags       []string `json:"tags"`
 }
 
-func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request) {
+func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request, userId int) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -219,8 +267,8 @@ func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request) {
 	for _, t := range payload {
 		var transactionID int64
 		err := tx.QueryRow(
-			"INSERT INTO transactions (amount, currency, occurred_at, merchant, person_name, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING transaction_id",
-			t.Amount, t.Currency, t.OccurredAt, t.Merchant, t.PersonName, t.Card, t.Category, t.Details,
+			"INSERT INTO transactions (amount, currency, occurred_at, merchant, user_id, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING transaction_id",
+			t.Amount, t.Currency, t.OccurredAt, t.Merchant, userId, t.Card, t.Category, t.Details,
 		).Scan(&transactionID)
 		if err != nil {
 			log.Printf("Failed to insert transaction: %v", err)
@@ -266,7 +314,7 @@ type TagPayload struct {
 	Action         string  `json:"action"` // "add" or "remove"
 }
 
-func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request) {
+func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request, userId int) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -341,7 +389,7 @@ func (db WithDB) ManageTags(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (db WithDB) GetCategories(w http.ResponseWriter, r *http.Request) {
+func (db WithDB) GetCategories(w http.ResponseWriter, r *http.Request, userId int) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -433,33 +481,43 @@ func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
-func (db WithDB) AuthMiddleware(next http.Handler) http.Handler {
+type HTTPError struct {
+	Code int
+	Err  error
+}
+
+func GetUserId(db *sql.DB, r *http.Request) (int, *HTTPError) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("authorization header required")}
+	}
+
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	if tokenString == authHeader {
+		return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("bearer token required")}
+	}
+
+	var userID int
+	var lastUsed time.Time
+	err := db.QueryRow("SELECT user_id, last_used FROM sessions WHERE session_code = $1", tokenString).Scan(&userID, &lastUsed)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("invalid session token")}
+		}
+		log.Printf("Error querying database for session token %s: %v", tokenString, err)
+		return 0, &HTTPError{http.StatusInternalServerError, fmt.Errorf("failed to query database")}
+	}
+	return userID, nil
+}
+
+func (db WithDB) AuthMiddleware(next func(w http.ResponseWriter, r *http.Request, userId int)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Authorization header required", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			http.Error(w, "Bearer token required", http.StatusUnauthorized)
-			return
-		}
-
-		var userID int
-		var lastUsed time.Time
-		err := db.db.QueryRow("SELECT user_id, last_used FROM sessions WHERE session_code = $1", tokenString).Scan(&userID, &lastUsed)
+		userId, err := GetUserId(db.db, r)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				http.Error(w, "Invalid session token", http.StatusUnauthorized)
-				return
-			}
-			log.Printf("Error querying database for session token %s: %v", tokenString, err)
-			http.Error(w, "Failed to query database", http.StatusInternalServerError)
+			http.Error(w, err.Err.Error(), err.Code)
 			return
 		}
-		next.ServeHTTP(w, r)
+		next(w, r, userId)
 	})
 }
 
@@ -480,11 +538,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login", router.Login)
-	mux.Handle("/api/transactions/add", router.AuthMiddleware(http.HandlerFunc(router.AddTransactions)))
-	mux.Handle("/api/transactions", router.AuthMiddleware(http.HandlerFunc(router.GetTransactions)))
-	mux.Handle("/api/transaction/update", router.AuthMiddleware(http.HandlerFunc(router.UpdateTransaction)))
-	mux.Handle("/api/transactions/tags", router.AuthMiddleware(http.HandlerFunc(router.ManageTags)))
-	mux.Handle("/api/categories", router.AuthMiddleware(http.HandlerFunc(router.GetCategories)))
+	mux.Handle("/api/transactions/add", router.AuthMiddleware(router.AddTransactions))
+	mux.Handle("/api/transactions", router.AuthMiddleware(router.GetTransactions))
+	mux.Handle("/api/transaction/update", router.AuthMiddleware(router.UpdateTransaction))
+	mux.Handle("/api/transaction/delete", router.AuthMiddleware(router.DeleteTransaction))
+	mux.Handle("/api/transactions/tags", router.AuthMiddleware(router.ManageTags))
+	mux.Handle("/api/categories", router.AuthMiddleware(router.GetCategories))
 	mux.Handle("/", http.FileServer(http.Dir("./dist")))
 
 	log.Print("listening on :8080...")
