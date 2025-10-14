@@ -1244,3 +1244,82 @@ summary {
   margin-top: 10px;
   min-height: 1.2em;
 }
+
+#scan-receipt-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.receipt-upload-label {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.receipt-upload-label:hover {
+  background-color: var(--background-dark);
+}
+
+.upload-icon {
+  font-size: 3em;
+  margin-bottom: 10px;
+}
+
+#scan-receipt-btn {
+  width: auto;
+  padding: 10px 30px;
+}
+
+#scan-receipt-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.receipt-upload-label {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.receipt-upload-label:hover {
+  background-color: var(--background-dark);
+}
+
+.upload-icon {
+  font-size: 3em;
+  margin-bottom: 10px;
+}
+
+#receipt-upload {
+  display: none;
+}
+
+#scan-receipt-btn {
+  width: auto;
+  padding: 10px 30px;
+}
+#import-modal textarea {
+  width: 100%;
+  height: 200px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1em;
+  resize: vertical;
+  box-sizing: border-box;
+}

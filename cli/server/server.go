@@ -517,6 +517,7 @@ func (db WithDB) AuthMiddleware(next func(w http.ResponseWriter, r *http.Request
 			http.Error(w, err.Err.Error(), err.Code)
 			return
 		}
+		// TODO add userId - transaction validation
 		next(w, r, userId)
 	})
 }

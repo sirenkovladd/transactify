@@ -161,7 +161,8 @@
   <div class="create-btn-container">
     <div class="create-btn-content">
       <a href="#" id="create-new-transaction-btn">New Transaction</a>
-      <a href="#" id="import-transaction">Import</a>
+      <a href="#" id="import-transaction">Import from file</a>
+      <a href="#" id="scan-receipt-action-btn">Scan Receipt</a>
     </div>
     <button class="create-btn">+ New</button>
   </div>
@@ -189,7 +190,12 @@
         <div class="tab" data-tab="wealthsimple">Wealthsimple</div>
       </div>
       <div id="csv-tab" class="tab-content active">
-        <textarea id="csv-input" placeholder="Paste your CSV data here"></textarea>
+        <div class="csv-import-container">
+          <div class="csv-header-example">
+            <p>date,merchant,amount,category,tags</p>
+          </div>
+          <textarea id="csv-input" placeholder="2024-01-01,The Coffee Shop,-3.50,Food,coffee&#10;2024-01-02,Book Store,-25.00,Shopping,books"></textarea>
+        </div>
         <button id="parse-csv-btn" class="apply-btn">Preview</button>
       </div>
       <div id="cibc-tab" class="tab-content">
@@ -258,6 +264,23 @@
       <div class="modal-footer">
         <button id="save-tag-btn" class="apply-btn">Save</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Scan Receipt Modal -->
+  <div id="scan-receipt-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h3>Scan Receipt</h3>
+      <div id="scan-receipt-container">
+        <label for="receipt-upload" class="receipt-upload-label">
+          <div class="upload-icon">📷</div>
+          <div>Click to upload a receipt</div>
+        </label>
+        <input type="file" id="receipt-upload" accept="image/*" style="display: none;">
+        <button id="scan-receipt-btn" class="apply-btn">Scan</button>
+      </div>
+      <div id="parsed-receipt-container"></div>
     </div>
   </div>
 
