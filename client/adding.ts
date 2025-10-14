@@ -59,15 +59,71 @@ function parseCIBC(data: string): any[] {
   ];
 }
 
-function parseWealthsimple(data: string): any[] {
-  // TODO
-  return [
-    { datetime: '2024-01-05T16:00:00', merchant: 'Wealthsimple Merchant 1', amount: 500, category: 'Category 2', tags: 'tag5' },
-    { datetime: '2024-01-06T17:00:00', merchant: 'Wealthsimple Merchant 2', amount: 600, category: 'Category 3', tags: 'tag6, tag7' },
-  ];
+const categoriesMap: Record<string, string[]> = {
+  "mobile internet": ["KOODO AIRTIME", "KOODO MOBILE"],
+  "internet": ["NOVUS"],
+  "food & other": ["SAVE ON FOODS", "URBAN FARE", "NOFRILLS JOTI'S", "BC LIQUOR", "LENA MARKET", "WHOLE FOODS", "JASMINE HALAL MEATS AND M", "EAST WEST MARKET", "PIAST BAKERY", "POLO FARMERS MARKET 2", "ORGANIC ACRES MARKET", "MARKET MEATS KITSILAN", "SEVEN SEAS FISH MARKET ON", "LITTLE GEM GROCERY", "TOP TEN PRODUCE", "BERRYMOBILE", "LEGACY LIQUOR STORE", "VALHALLA PURE OUTFITTERS", "OSYOOS PRODUCE", "SQ *OH SWEET DAY BAKE SH", "Body Energy Club", "Aburi Market"],
+  "takeouts": ["BIG DADDY'S FISH FRY", "STARBUCKS", "LA DIPERIE", "MR. SUSHI MAIN STREET", "FOGLIFTER COFFEE ROASTERS", "STEGA EATERY", "THE WATSON", "BEST FALAFEL", "DOORDASHFATBURGER", "OPHELIA", "CANUCKS SPORTS", "Matchstick Riley Park", "PNE FOOD & BEVERAGE", "HUNNYBEE", "PUREBREAD BAKERY", "CULTIVATE TEA", "COMMODORE BALLROOM", "SUPERFLUX (CABANA)", "IRISH TIMES PUB", "THE BENT MAST RESTAURANT", "CRUST BAKERY", "TERRAZZO", "10 ACRES", "THE FISH STORE AT FISHER", "Old Country Market", "BARKLEY CAFE", "RHINO COFFEE HOUSE", "SQ *#B33R", "PLEASE BEVERAGE", "Small Victory Bakery", "VIA TEVERE MAIN ST", "BEAUCOUP BAKERY AND C", "Sq *Thierry Mt. Pleasant", "Holy Eucharist Cathed", "KOZAK"],
+  "transportation": ["LYFT", "COMPASS WEB", "UBER", "COMPASS WALK", "COMPASS ACCOUNT", "BC TRANSIT", "COMPASS AUTOLOAD", "BCF - ONLINE SALES", "BC, SPIRIT OF", "BCF-CUSTOMER SERVICE CENT"],
+  "clothes": ["Bailey Nelson", "THE ROCKIN COWBOY", "WINNERSHOMESENSE", "SP KOTN", "TOFINO PHARMACY", "Lamaisonsimons"],
+  "health": ["COASTAL EYE CLINIC"],
+  "home goods": ["CANADIAN TIRE", "AMAZON*", "AMAZON.COM *", "YOUR DOLLAR STORE", "VALUE VILLAGE", "MICHAELS", "Amazon.ca", "DOLLARAMA", "SALARMY", "BLUMEN FLORALS", "HCM*CARSON BOOKS INC", "Hetzner Online Gmbh", "Smart N Save", "The Best Shop", "Popeyes"],
+  "presents": ["PET VALU CANADA INC.", "APPLE.COM/CA", "SP DBCANADA"],
+  "haircut": ["KONAS BARBER SHOP"],
+  "donations": [],
+  "therapy": [],
+  "english": [],
+  "french": ["Preply"],
+  "events": ["TICKETLEADER", "SEATGEEK TICKETS", "ROYAL BC MUSEUM", "FOX CABARET", "BOUNCE* TICKET", "Cineplex", "Eventbrite"],
+  "travel": ["VIA RAIL/ZAW99N", "AIR CAN*", "BOOKING.COM", "Wb E-Store"],
+  "london drugs": ["LONDON DRUGS", "SHOPPERS DRUG"],
+  "taxAccountant": ["LILICO"],
+  "film": ["Amazon Channels", "PrimeVideo"],
+  "hotel": ["Hotel at"],
+  "visa": ["Ups"],
+};
+
+function getCategory(merchant: string): string {
+  for (const category in categoriesMap) {
+    for (const pattern of categoriesMap[category]) {
+      if (merchant.toLowerCase().includes(pattern.toLowerCase())) {
+        return category;
+      }
+    }
+  }
+  return "Unknown";
 }
 
-function renderParsedTransactions(data: any[], container: HTMLElement) {
+function parseWealthsimple(data: string): any[] {
+  const payload = JSON.parse(data);
+
+  return payload.filter(e => e.node.amountSign === 'negative').map((item: any) => {
+    const node = item.node;
+    let amount = parseFloat(node.amount);
+
+    const d = new Date(node.occurredAt);
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const datetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    const merchant = node.spendMerchant;
+    const category = getCategory(merchant);
+
+    return {
+      datetime: datetime,
+      merchant: merchant,
+      amount: amount,
+      category: category,
+      card: 'wealthsimple',
+      tags: '',
+    };
+  });
+}
+
+function renderParsedTransactions(data: any[], container: HTMLElement, card?: string) {
   container.innerHTML = '';
 
   const allTagsInput = input({ type: 'text', placeholder: 'Add tag to all' });
@@ -93,8 +149,9 @@ function renderParsedTransactions(data: any[], container: HTMLElement) {
         th('Merchant'),
         th('Amount'),
         th('Category'),
+        card ? null : th('Card'),
         th('Tags'),
-        th('Actions')
+        th('Actions'),
       )
     ),
     tbody(
@@ -104,6 +161,7 @@ function renderParsedTransactions(data: any[], container: HTMLElement) {
           td(input({ type: 'text', value: item.merchant })),
           td(input({ type: 'number', value: item.amount })),
           td(select({ class: 'modal-input' }, ...categories.val.map(c => option({ value: c, selected: c === item.category }, c)))),
+          card ? null : td(input({ type: 'text', value: '' })),
           td(input({ type: 'text', value: item.tags, class: 'tags-input' })),
           td(button({ onclick: (e: Event) => (e.target as HTMLElement)?.closest('tr')?.remove() }, 'Remove'))
         )
@@ -121,17 +179,18 @@ function renderParsedTransactions(data: any[], container: HTMLElement) {
         const merchant = (inputs[1] as HTMLInputElement).value;
         const amount = parseFloat((inputs[2] as HTMLInputElement).value);
         const category = (inputs[3] as HTMLSelectElement).value;
-        const tags = (inputs[4] as HTMLInputElement).value.split(',').map(t => t.trim()).filter(t => t);
+        const cardValue = card ? card : (inputs[4] as HTMLInputElement).value;
+        const tags = (inputs[card ? 4 : 5] as HTMLInputElement).value.split(',').map(t => t.trim()).filter(t => t);
 
         transactionsToSave.push({
-          occurredAt,
+          occurredAt: new Date(occurredAt).toISOString(),
           merchant,
           amount,
           category,
           tags,
           currency: 'CAD', // Defaulting currency
           personName: '', // Defaulting personName
-          card: '', // Defaulting card
+          card: cardValue,
         });
       });
 
@@ -194,14 +253,14 @@ export function setupAdding() {
     const parsedTransactionsContainer = document.getElementById('parsed-transactions-container');
     // TODO add scan receipt
 
-    const parseData = (parser: (data: string) => any[]) => {
+    const parseData = (parser: (data: string) => any[], card?: string) => {
       return () => {
         const inputId = parser.name.replace('parse', '').toLowerCase() + '-input';
         const input = document.getElementById(inputId) as HTMLTextAreaElement;
         if (input && parsedTransactionsContainer) {
           const data = input.value;
           const parsedData = parser(data);
-          renderParsedTransactions(parsedData, parsedTransactionsContainer);
+          renderParsedTransactions(parsedData, parsedTransactionsContainer, card);
         }
       }
     }
@@ -210,10 +269,10 @@ export function setupAdding() {
       parseCSVBtn.onclick = parseData(parseCSV);
     }
     if (parseCIBCBtn) {
-      parseCIBCBtn.onclick = parseData(parseCIBC);
+      parseCIBCBtn.onclick = parseData(parseCIBC, 'cibc');
     }
     if (parseWealthsimpleBtn) {
-      parseWealthsimpleBtn.onclick = parseData(parseWealthsimple);
+      parseWealthsimpleBtn.onclick = parseData(parseWealthsimple, 'wealthsimple');
     }
   }
 

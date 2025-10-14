@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict OxF44Lfc98uejhe66mWVc5czwh3kIXD7ZLuk81Ji1e3xOcWi79akHKkOJIczH0r
+\restrict TFMqmb6ZqVGByafqHMJe5JWrwsA7Q4Q15dsMUKfKTXhFCr0mLR0HdCcmAcjG7it
 
 -- Dumped from database version 14.19 (Debian 14.19-1.pgdg13+1)
 -- Dumped by pg_dump version 18.0
@@ -275,7 +275,7 @@ ALTER TABLE ONLY public.transactions
 --
 
 ALTER TABLE ONLY public.transactions
-    ADD CONSTRAINT unique_merchant_time UNIQUE (merchant, occurred_at);
+    ADD CONSTRAINT unique_merchant_time UNIQUE (merchant, occurred_at, user_id);
 
 
 --
@@ -338,5 +338,5 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OxF44Lfc98uejhe66mWVc5czwh3kIXD7ZLuk81Ji1e3xOcWi79akHKkOJIczH0r
+\unrestrict TFMqmb6ZqVGByafqHMJe5JWrwsA7Q4Q15dsMUKfKTXhFCr0mLR0HdCcmAcjG7it
 

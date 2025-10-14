@@ -176,13 +176,25 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 	if len(params) > 0 {
 		finalQuery := query.String()
 		finalQuery = finalQuery[:len(finalQuery)-2]
-		finalQuery += fmt.Sprintf(" WHERE transaction_id = $%d", paramId)
-		params = append(params, payload.ID)
+		finalQuery += fmt.Sprintf(" WHERE transaction_id = $%d AND user_id = $%d", paramId, paramId+1)
+		params = append(params, payload.ID, userId)
 
-		_, err := db.db.Exec(finalQuery, params...)
+		res, err := db.db.Exec(finalQuery, params...)
 		if err != nil {
 			log.Printf("Error updating transaction %d: %v", payload.ID, err)
 			http.Error(w, "Failed to update transaction", http.StatusInternalServerError)
+			return
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			log.Printf("Error getting rows affected for transaction %d: %v", payload.ID, err)
+			http.Error(w, "Failed to update transaction", http.StatusInternalServerError)
+			return
+		}
+
+		if rowsAffected == 0 {
+			http.Error(w, "Transaction not found", http.StatusNotFound)
 			return
 		}
 	}
@@ -211,7 +223,7 @@ func (db WithDB) DeleteTransaction(w http.ResponseWriter, r *http.Request, userI
 		return
 	}
 
-	res, err := db.db.Exec("DELETE FROM transactions WHERE transaction_id = ", payload.ID)
+	res, err := db.db.Exec("DELETE FROM transactions WHERE transaction_id = $1 AND user_id = $2", payload.ID, userId)
 	if err != nil {
 		log.Printf("Error deleting transaction %d: %v", payload.ID, err)
 		http.Error(w, "Failed to delete transaction", http.StatusInternalServerError)
@@ -267,12 +279,12 @@ func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request, userId 
 	for _, t := range payload {
 		var transactionID int64
 		err := tx.QueryRow(
-			"INSERT INTO transactions (amount, currency, occurred_at, merchant, user_id, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING transaction_id",
+			"INSERT INTO transactions (amount, currency, occurred_at, merchant, user_id, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, merchant, occurred_at) DO UPDATE SET amount = EXCLUDED.amount, category = EXCLUDED.category, card = EXCLUDED.card, details = CASE WHEN EXCLUDED.details IS NOT NULL AND EXCLUDED.details <> '' THEN EXCLUDED.details ELSE transactions.details END RETURNING transaction_id",
 			t.Amount, t.Currency, t.OccurredAt, t.Merchant, userId, t.Card, t.Category, t.Details,
 		).Scan(&transactionID)
 		if err != nil {
-			log.Printf("Failed to insert transaction: %v", err)
-			http.Error(w, "Failed to insert transaction", http.StatusInternalServerError)
+			log.Printf("Failed to insert/update transaction: %v", err)
+			http.Error(w, "Failed to insert/update transaction", http.StatusInternalServerError)
 			return
 		}
 
