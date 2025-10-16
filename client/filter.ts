@@ -1,5 +1,5 @@
 import van, { type State } from "vanjs-core";
-import { amountFilter, cardFilter, cards, categories, categoryFilter, dateEndFilter, dateStartFilter, maxDate, merchantFilter, merchants, minDate, personFilter, persons, tagFilter, tags, transactions } from './common.ts';
+import { amountFilter, cardFilter, cards, categoriesFromTransaction, categoryFilter, dateEndFilter, dateStartFilter, maxDate, merchantFilter, merchants, minDate, personFilter, persons, tagFilter, tags, transactions } from './common.ts';
 
 declare const DateRangePicker: any;
 
@@ -247,8 +247,8 @@ export function setupFilters() {
   createMultiSelect(document.getElementById('card-mobile')!, cards, cardFilter);
   createMultiSelect(document.getElementById('person')!, persons, personFilter);
   createMultiSelect(document.getElementById('person-mobile')!, persons, personFilter);
-  createMultiSelect(document.getElementById('category')!, categories, categoryFilter);
-  createMultiSelect(document.getElementById('category-mobile')!, categories, categoryFilter);
+  createMultiSelect(document.getElementById('category')!, categoriesFromTransaction, categoryFilter);
+  createMultiSelect(document.getElementById('category-mobile')!, categoriesFromTransaction, categoryFilter);
   createMultiSelect(document.getElementById('tag')!, tags, tagFilter);
   createMultiSelect(document.getElementById('tag-mobile')!, tags, tagFilter);
 }

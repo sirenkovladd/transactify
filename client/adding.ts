@@ -1,7 +1,7 @@
-import van from "vanjs-core";
+import van, { type ChildDom, type State } from "vanjs-core";
 import { addTransactions, categories, type NewTransaction } from './common.ts';
 
-const { div, span, p, h3, strong, table, thead, tbody, tr, th, td, input, button, option, select } = van.tags;
+const { div, span, p, h3, strong, table, thead, tbody, tr, th, td, input, button, option, select, textarea } = van.tags;
 
 function parseCSV(data: string): any[] {
   const lines = data.trim().split('\n');
@@ -84,8 +84,8 @@ const categoriesMap: Record<string, string[]> = {
 };
 
 function getCategory(merchant: string): string {
-  for (const category in categoriesMap) {
-    for (const pattern of categoriesMap[category]) {
+  for (const [category, merchants] of Object.entries(categoriesMap)) {
+    for (const pattern of merchants) {
       if (merchant.toLowerCase().includes(pattern.toLowerCase())) {
         return category;
       }
@@ -95,7 +95,7 @@ function getCategory(merchant: string): string {
 }
 
 function parseWealthsimple(data: string): any[] {
-  const payload = JSON.parse(data);
+  const payload = JSON.parse(data) as { node: { amountSign: string, amount: string, occurredAt: string, spendMerchant: string } }[];
 
   return payload.filter(e => e.node.amountSign === 'negative').map((item: any) => {
     const node = item.node;
@@ -123,8 +123,8 @@ function parseWealthsimple(data: string): any[] {
   });
 }
 
-function renderParsedTransactions(data: any[], container: HTMLElement, card?: string) {
-  container.innerHTML = '';
+function renderParsedTransactions(data: any[], card: string | undefined, openImportModal: State<boolean>) {
+  const container = div();
 
   const allTagsInput = input({ type: 'text', placeholder: 'Add tag to all' });
   const addTagButton = button({
@@ -196,87 +196,83 @@ function renderParsedTransactions(data: any[], container: HTMLElement, card?: st
 
       if (transactionsToSave.length > 0) {
         addTransactions(transactionsToSave).then(() => {
-          const importModal = document.getElementById('import-modal');
-          if (importModal) {
-            importModal.style.display = 'none';
-          }
-          container.innerHTML = ''; // Clear the parsed transactions
+          openImportModal.val = false;
         });
       }
     }
   }, 'Save Imported Transactions');
 
   van.add(container, div(allTagsInput, addTagButton), transactionTable, div(saveButton));
+  return container;
 }
 
 export function setupAdding() {
-  // Import Modal Logic
-  const importModal = document.getElementById('import-modal');
-  const importBtn = document.getElementById('import-transaction');
-  const importCloseButton = importModal?.getElementsByClassName('close-button')[0] as HTMLElement;
+  const openImportModal = van.state(false);
 
-  if (importModal && importBtn && importCloseButton) {
-    importBtn.onclick = () => {
-      importModal.style.display = 'block';
-    }
+  const ImportModalComponent = () => {
+    if (!openImportModal.val) return '';
 
-    importCloseButton.onclick = () => {
-      importModal.style.display = 'none';
-    }
+    const active = van.state<'Wealthsimple' | 'CSV' | 'CIBC'>('Wealthsimple');
 
-    window.onclick = (event) => {
-      if (event.target == importModal) {
-        importModal.style.display = 'none';
-      }
+    const Tab = (type: typeof active.val, ...children: ChildDom[]) => div({ class: () => `tab-content${active.val === type ? ' active' : ''}` }, ...children)
+
+    const parsedTransactionsContainer = div({ id: 'parsed-transactions-container' });
+
+    const wealthsimpleInput = textarea({ id: 'wealthsimple-input', placeholder: 'Paste your Wealthsimple data here' });
+    const cibcInput = textarea({ id: 'cibc-input', placeholder: 'Paste your CIBC data here' });
+    const csvInput = textarea({ id: 'csv-input', placeholder: '2024-01-01,The Coffee Shop,-3.50,Food,coffee\n2024-01-02,Book Store,-25.00,Shopping,books' });
+
+    const parseData = (input: HTMLTextAreaElement, parser: (data: string) => any[], card?: string) => {
+      return () => {
+        const data = input.value;
+        const parsedData = parser(data);
+        console.log(parsedData);
+        parsedTransactionsContainer.innerHTML = '';
+        van.add(parsedTransactionsContainer, renderParsedTransactions(parsedData, card, openImportModal));
+      };
     };
 
-    const tabs = importModal.querySelectorAll('.tab');
-    const tabContents = importModal.querySelectorAll('.tab-content');
+    const modal = div({ id: 'import-modal', class: 'modal', style: 'display: block;', onclick: () => openImportModal.val = false },
+      div({ class: 'modal-content', onclick: (e: Event) => e.stopPropagation() },
+        span({ class: 'close-button', onclick: () => openImportModal.val = false }, '×'),
+        div({ class: 'tab-container' },
+          (['Wealthsimple', 'CIBC', 'CSV'] as const).map((type) => div({
+            class: () => `tab${active.val === type ? ' active' : ''}`,
+            'data-tab': 'wealthsimple',
+            onclick: () => active.val = type,
+          }, type))
+        ),
+        Tab("Wealthsimple",
+          wealthsimpleInput,
+          button({ id: 'parse-wealthsimple-btn', class: 'apply-btn', onclick: parseData(wealthsimpleInput, parseWealthsimple, 'wealthsimple') }, 'Preview')
+        ),
+        Tab('CIBC',
+          cibcInput,
+          button({ id: 'parse-cibc-btn', class: 'apply-btn', onclick: parseData(cibcInput, parseCIBC, 'cibc') }, 'Preview')
+        ),
+        Tab('CSV',
+          div({ class: 'csv-import-container' },
+            div({ class: 'csv-header-example' },
+              p('date,merchant,amount,category,tags')
+            ),
+            csvInput,
+          ),
+          button({ id: 'parse-csv-btn', class: 'apply-btn', onclick: parseData(csvInput, parseCSV) }, 'Preview')
+        ),
+        parsedTransactionsContainer,
+      )
+    );
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+    return modal;
+  };
 
-        tabContents.forEach(c => c.classList.remove('active'));
-        const tabName = tab.getAttribute('data-tab');
-        if (tabName) {
-          document.getElementById(tabName + '-tab')?.classList.add('active');
-        }
-      });
-    });
-
-    const parseCSVBtn = document.getElementById('parse-csv-btn');
-    const parseCIBCBtn = document.getElementById('parse-cibc-btn');
-    const parseWealthsimpleBtn = document.getElementById('parse-wealthsimple-btn');
-
-    const parsedTransactionsContainer = document.getElementById('parsed-transactions-container');
-    // TODO add scan receipt
-
-    const parseData = (parser: (data: string) => any[], card?: string) => {
-      return () => {
-        const inputId = parser.name.replace('parse', '').toLowerCase() + '-input';
-        const input = document.getElementById(inputId) as HTMLTextAreaElement;
-        if (input && parsedTransactionsContainer) {
-          const data = input.value;
-          const parsedData = parser(data);
-          renderParsedTransactions(parsedData, parsedTransactionsContainer, card);
-        }
-      }
-    }
-
-    if (parseCSVBtn) {
-      parseCSVBtn.onclick = parseData(parseCSV);
-    }
-    if (parseCIBCBtn) {
-      parseCIBCBtn.onclick = parseData(parseCIBC, 'cibc');
-    }
-    if (parseWealthsimpleBtn) {
-      parseWealthsimpleBtn.onclick = parseData(parseWealthsimple, 'wealthsimple');
-    }
+  // Set up the import button
+  const importBtn = document.getElementById('import-transaction');
+  if (importBtn) {
+    importBtn.onclick = () => openImportModal.val = true;
   }
 
-  // Create New Transaction Modal Logic
+  // Create New Transaction Modal Logic (unchanged)
   const createNewTransactionModal = document.getElementById('create-new-transaction-modal');
   const createNewTransactionBtn = document.getElementById('create-new-transaction-btn');
   const createNewTransactionCloseButton = createNewTransactionModal?.getElementsByClassName('close-button')[0] as HTMLElement;
@@ -323,4 +319,6 @@ export function setupAdding() {
       });
     });
   }
+
+  return [openImportModal, ImportModalComponent];
 }

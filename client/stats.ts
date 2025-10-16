@@ -10,14 +10,16 @@ export function setupStats() {
   const categoryChartCanvas = document.getElementById('category-chart') as HTMLCanvasElement;
   const tagsChartCanvas = document.getElementById('tags-chart') as HTMLCanvasElement;
   const personChartCanvas = document.getElementById('person-chart') as HTMLCanvasElement;
+  const lastMonthChartCanvas = document.getElementById('last-month-chart') as HTMLCanvasElement;
 
-  if (!summaryContent || !categoryChartCanvas || !tagsChartCanvas || !personChartCanvas) {
+  if (!summaryContent || !categoryChartCanvas || !tagsChartCanvas || !personChartCanvas || !lastMonthChartCanvas) {
     return;
   }
 
   let categoryChart: any;
   let tagsChart: any;
   let personChart: any;
+  let lastMonthChart: any;
 
   const createPieChart = (canvas: HTMLCanvasElement, data: any, label: string) => {
     const ctx = canvas.getContext('2d');
@@ -57,6 +59,47 @@ export function setupStats() {
         }
       }
     });
+  };
+
+  const createBarChart = (canvas: HTMLCanvasElement, labels: string[], data: number[], label: string) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    return new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: data,
+          backgroundColor: 'rgba(75, 192, 192, 0.8)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          title: {
+            display: false,
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  };
+
+  const updateBarChart = (chart: any, labels: string[], data: number[]) => {
+    if (!chart) return;
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    chart.update();
   };
 
   const updateChart = (chart: any, data: any) => {
@@ -121,6 +164,52 @@ export function setupStats() {
       personChart = createPieChart(personChartCanvas, personData, 'By Person');
     } else {
       updateChart(personChart, personData);
+    }
+
+    // Last 30 days bar chart
+    const dailyDataMap = new Map<string, number>();
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    // Initialize map for the last 31 days
+    for (let i = 0; i < 31; i++) {
+      const date = new Date(thirtyDaysAgo);
+      date.setDate(date.getDate() + i);
+      const dayKey = date.toISOString().split('T')[0] as string; // YYYY-MM-DD
+      dailyDataMap.set(dayKey, 0);
+    }
+    console.log(dailyDataMap);
+
+    const transactionsInDateRange = transactions.filter(tr => {
+      const trDate = new Date(tr.occurredAt);
+      return trDate >= thirtyDaysAgo;
+    });
+
+    transactionsInDateRange.forEach(tr => {
+      const dayKey = new Date(tr.occurredAt).toISOString().split('T')[0] as string;
+      if (dailyDataMap.has(dayKey)) {
+        dailyDataMap.set(dayKey, (dailyDataMap.get(dayKey) || 0) + Math.abs(tr.amount));
+      }
+    });
+    console.log(dailyDataMap);
+
+    const sortedDailyData = new Map([...dailyDataMap.entries()].sort());
+    console.log(sortedDailyData);
+
+    const labels = Array.from(sortedDailyData.keys()).map(dateString => {
+      const date = new Date(dateString);
+      const localDate = new Date(date.valueOf() + date.getTimezoneOffset() * 60 * 1000);
+      return localDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    });
+    const dataValues = Array.from(sortedDailyData.values());
+    console.log(labels, dataValues);
+
+    if (!lastMonthChart) {
+      lastMonthChart = createBarChart(lastMonthChartCanvas, labels, dataValues, 'Amount');
+    } else {
+      updateBarChart(lastMonthChart, labels, dataValues);
     }
   });
 }

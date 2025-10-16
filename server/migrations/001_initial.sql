@@ -1,40 +1,4 @@
---
--- PostgreSQL database dump
---
-
-\restrict TFMqmb6ZqVGByafqHMJe5JWrwsA7Q4Q15dsMUKfKTXhFCr0mLR0HdCcmAcjG7it
-
--- Dumped from database version 14.19 (Debian 14.19-1.pgdg13+1)
--- Dumped by pg_dump version 18.0
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: user
---
-
--- *not* creating schema, since initdb creates it
-
-
 ALTER SCHEMA public OWNER TO "user";
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: sessions; Type: TABLE; Schema: public; Owner: user
---
 
 CREATE TABLE public.sessions (
     session_id integer NOT NULL,
@@ -45,12 +9,7 @@ CREATE TABLE public.sessions (
     last_used timestamp with time zone DEFAULT now()
 );
 
-
 ALTER TABLE public.sessions OWNER TO "user";
-
---
--- Name: sessions_session_id_seq; Type: SEQUENCE; Schema: public; Owner: user
---
 
 CREATE SEQUENCE public.sessions_session_id_seq
     AS integer
@@ -62,17 +21,7 @@ CREATE SEQUENCE public.sessions_session_id_seq
 
 
 ALTER SEQUENCE public.sessions_session_id_seq OWNER TO "user";
-
---
--- Name: sessions_session_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
---
-
 ALTER SEQUENCE public.sessions_session_id_seq OWNED BY public.sessions.session_id;
-
-
---
--- Name: tags; Type: TABLE; Schema: public; Owner: user
---
 
 CREATE TABLE public.tags (
     tag_id integer NOT NULL,
@@ -81,10 +30,6 @@ CREATE TABLE public.tags (
 
 
 ALTER TABLE public.tags OWNER TO "user";
-
---
--- Name: tags_tag_id_seq; Type: SEQUENCE; Schema: public; Owner: user
---
 
 CREATE SEQUENCE public.tags_tag_id_seq
     AS integer
@@ -96,17 +41,8 @@ CREATE SEQUENCE public.tags_tag_id_seq
 
 
 ALTER SEQUENCE public.tags_tag_id_seq OWNER TO "user";
-
---
--- Name: tags_tag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
---
-
 ALTER SEQUENCE public.tags_tag_id_seq OWNED BY public.tags.tag_id;
 
-
---
--- Name: transaction_tags; Type: TABLE; Schema: public; Owner: user
---
 
 CREATE TABLE public.transaction_tags (
     transaction_id integer NOT NULL,
@@ -115,10 +51,6 @@ CREATE TABLE public.transaction_tags (
 
 
 ALTER TABLE public.transaction_tags OWNER TO "user";
-
---
--- Name: transactions; Type: TABLE; Schema: public; Owner: user
---
 
 CREATE TABLE public.transactions (
     transaction_id integer NOT NULL,
@@ -135,10 +67,6 @@ CREATE TABLE public.transactions (
 
 ALTER TABLE public.transactions OWNER TO "user";
 
---
--- Name: transactions_transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: user
---
-
 CREATE SEQUENCE public.transactions_transaction_id_seq
     AS integer
     START WITH 1
@@ -149,17 +77,7 @@ CREATE SEQUENCE public.transactions_transaction_id_seq
 
 
 ALTER SEQUENCE public.transactions_transaction_id_seq OWNER TO "user";
-
---
--- Name: transactions_transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: user
---
-
 ALTER SEQUENCE public.transactions_transaction_id_seq OWNED BY public.transactions.transaction_id;
-
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: user
---
 
 CREATE TABLE public.users (
     user_id integer NOT NULL,
@@ -337,6 +255,3 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict TFMqmb6ZqVGByafqHMJe5JWrwsA7Q4Q15dsMUKfKTXhFCr0mLR0HdCcmAcjG7it
-

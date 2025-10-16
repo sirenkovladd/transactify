@@ -1,5 +1,4 @@
-import van from "vanjs-core";
-import { transactionPopup } from "./popup";
+import van, { type State } from "vanjs-core";
 
 const { div, span, p, h3, strong } = van.tags;
 
@@ -29,8 +28,14 @@ van.derive(() => {
   loggedIn.val = !!token.val;
 });
 
+const params = new URLSearchParams(window.location.search);
+
+const amountMin = params.get('amountMin');
+const amountMax = params.get('amountMax');
+
 export const transactions = van.state<Transaction[]>([])
 export const categories = van.state<string[]>([]);
+export const categoriesFromTransaction = van.derive(() => [...new Set(transactions.val.map(t => t.category))]);
 export const merchants = van.derive(() => [...new Set(transactions.val.map(t => t.merchant))]);
 export const cards = van.derive(() => [...new Set(transactions.val.map(t => t.card))]);
 export const persons = van.derive(() => [...new Set(transactions.val.map(t => t.personName))]);
@@ -39,15 +44,16 @@ export const error = van.state('');
 export const loading = van.state(true);
 
 // Filter states
-export const amountFilter = van.state({ min: 0, max: 1000 });
-export const dateStartFilter = van.state('2023-01-01');
-export const dateEndFilter = van.state(new Date().toISOString().split('T')[0] as string);
-export const merchantFilter = van.state<string[]>([]);
-export const cardFilter = van.state<string[]>([]);
-export const personFilter = van.state<string[]>([]);
-export const categoryFilter = van.state<string[]>([]);
-export const tagFilter = van.state<string[]>([]);
-export const groupedOption = van.state<keyof typeof groupedOptions>('category');
+export const amountFilter = van.state({ min: amountMin ? Number(amountMin) : 0, max: amountMax ? Number(amountMax) : 0 });
+export const dateStartFilter = van.state(params.get('dateStart') || '2023-01-01');
+export const dateEndFilter = van.state(params.get('dateEnd') || new Date().toISOString().split('T')[0] as string);
+export const merchantFilter = van.state<string[]>(params.has('merchants') ? params.get('merchants')!.split(',') : []);
+export const cardFilter = van.state<string[]>(params.has('cards') ? params.get('cards')!.split(',') : []);
+export const personFilter = van.state<string[]>(params.has('persons') ? params.get('persons')!.split(',') : []);
+export const categoryFilter = van.state<string[]>(params.has('categories') ? params.get('categories')!.split(',') : []);
+export const tagFilter = van.state<string[]>(params.has('tags') ? params.get('tags')!.split(',') : []);
+export const groupedOption = van.state<keyof typeof groupedOptions>(params.get('groupBy') as keyof typeof groupedOptions || 'category');
+export const activeTab = van.state(params.get('tab') || 'grouped');
 export const minDate = van.state<string | null>(null);
 export const maxDate = van.state<string | null>(null);
 
@@ -166,7 +172,64 @@ van.derive(() => {
   }
 });
 
+let blockUrlUpdate = true;
+
+function updateUrl() {
+  if (blockUrlUpdate) return;
+
+  const params = new URLSearchParams();
+
+  if (dateStartFilter.val !== minDate.val) {
+    params.set('dateStart', dateStartFilter.val);
+  }
+  if (dateEndFilter.val !== maxDate.val) {
+    params.set('dateEnd', dateEndFilter.val);
+  }
+
+  if (amountFilter.val.min > 0) {
+    params.set('amountMin', amountFilter.val.min.toString());
+  }
+  params.set('amountMax', amountFilter.val.max.toString());
+
+  if (merchantFilter.val.length > 0) params.set('merchants', merchantFilter.val.join(','));
+  if (cardFilter.val.length > 0) params.set('cards', cardFilter.val.join(','));
+  if (personFilter.val.length > 0) params.set('persons', personFilter.val.join(','));
+  if (categoryFilter.val.length > 0) params.set('categories', categoryFilter.val.join(','));
+  if (tagFilter.val.length > 0) params.set('tags', tagFilter.val.join(','));
+
+  if (groupedOption.val !== 'category') {
+    params.set('groupBy', groupedOption.val);
+  }
+  if (activeTab.val !== 'grouped') {
+    params.set('tab', activeTab.val);
+  }
+
+  const query = params.toString();
+  const newPath = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  if (location.href !== newPath) {
+    history.pushState({}, '', newPath);
+  }
+}
+
 van.derive(() => {
+  amountFilter.val;
+  dateStartFilter.val;
+  dateEndFilter.val;
+  merchantFilter.val;
+  cardFilter.val;
+  personFilter.val;
+  categoryFilter.val;
+  tagFilter.val;
+  groupedOption.val;
+  activeTab.val;
+  minDate.val;
+  maxDate.val;
+  updateUrl();
+});
+
+let initialSetupDone = false;
+van.derive(() => {
+  if (initialSetupDone) return;
   const transactionsList = transactions.val;
   if (transactionsList.length === 0) return;
   const first = transactionsList[0];
@@ -194,6 +257,9 @@ van.derive(() => {
     dateStartFilter.val = minDateStr;
     dateEndFilter.val = maxDateStr;
     amountFilter.val = { min: 0, max: maxAmount };
+
+    initialSetupDone = true;
+    blockUrlUpdate = false;
   }
 })
 
@@ -283,7 +349,7 @@ export const groupedOptions = {
   people: (tr: Transaction) => tr.personName,
 };
 
-export function convertTransaction(tr: Transaction) {
+export function convertTransaction(tr: Transaction, transactionModal: State<Transaction | null>) {
   const card = div({ class: "transaction-card" }, [
     div({ class: "card-header" }, [
       span({ class: "category-icon" }, getIcon(tr.category)),
@@ -303,7 +369,139 @@ export function convertTransaction(tr: Transaction) {
     div({ class: "tags" }, tr.tags.map((tag) => span({ class: "tag" }, `#${tag}`))),
   ]);
 
-  card.addEventListener('click', () => transactionPopup(tr));
+  card.addEventListener('click', () => {
+    transactionModal.val = tr;
+  });
 
   return card;
+}
+
+export async function getTokens() {
+  if (!token.val) return [];
+  try {
+    const response = await fetch('/api/sharing/tokens', {
+      headers: { 'Authorization': `Bearer ${token.val}` }
+    });
+    if (response.status === 401) {
+      token.val = '';
+      return [];
+    }
+    if (!response.ok) throw new Error('Failed to get tokens');
+    return await response.json();
+  } catch (e: any) {
+    error.val = e.message;
+    return [];
+  }
+}
+
+export async function generateToken() {
+  if (!token.val) return;
+  try {
+    const response = await fetch('/api/sharing/token', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token.val}` }
+    });
+    if (response.status === 401) {
+      token.val = '';
+      return;
+    }
+    if (!response.ok) throw new Error('Failed to generate token');
+  } catch (e: any) {
+    error.val = e.message;
+  }
+}
+
+export async function revokeToken(tokenToRevoke: string) {
+  if (!token.val) return;
+  try {
+    const response = await fetch('/api/sharing/token/revoke', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.val}`
+      },
+      body: JSON.stringify({ token: tokenToRevoke })
+    });
+    if (response.status === 401) {
+      token.val = '';
+      return;
+    }
+    if (!response.ok) throw new Error('Failed to revoke token');
+  } catch (e: any) {
+    error.val = e.message;
+  }
+}
+
+export type Subscription = {
+  PersonName: string;
+  EncryptedUserID: string;
+}
+
+export async function getSubscriptions() {
+  if (!token.val) return { subscribers: [], subscriptions: [] };
+  try {
+    const headers = { 'Authorization': `Bearer ${token.val}` };
+    const [subscriptionsResponse, subscribersResponse] = await Promise.all([
+      fetch('/api/sharing/subscriptions', { headers }),
+      fetch('/api/sharing/connections', { headers }) // This endpoint returns who is subscribed to me
+    ]);
+
+    if (subscriptionsResponse.status === 401 || subscribersResponse.status === 401) {
+      token.val = '';
+      return { subscribers: [], subscriptions: [] };
+    }
+
+    if (!subscriptionsResponse.ok) throw new Error('Failed to get subscriptions');
+    if (!subscribersResponse.ok) throw new Error('Failed to get subscribers');
+
+    const subscriptionsData: Subscription[] = await subscriptionsResponse.json();
+    const subscribersData: string[] = await subscribersResponse.json();
+
+    return { subscriptions: subscriptionsData, subscribers: subscribersData };
+  } catch (e: any) {
+    error.val = e.message;
+    return { subscribers: [], subscriptions: [] };
+  }
+}
+
+export async function addConnection(connectionToken: string) {
+  if (!token.val) return;
+  try {
+    const response = await fetch('/api/sharing/connections/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.val}`
+      },
+      body: JSON.stringify({ token: connectionToken })
+    });
+    if (response.status === 401) {
+      token.val = '';
+      return;
+    }
+    if (!response.ok) throw new Error('Failed to add connection');
+  } catch (e: any) {
+    error.val = e.message;
+  }
+}
+
+export async function unsubscribe(encryptedUserId: string) {
+  if (!token.val) return;
+  try {
+    const response = await fetch('/api/sharing/unsubscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.val}`
+      },
+      body: JSON.stringify({ encryptedUserId })
+    });
+    if (response.status === 401) {
+      token.val = '';
+      return;
+    }
+    if (!response.ok) throw new Error('Failed to unsubscribe');
+  } catch (e: any) {
+    error.val = e.message;
+  }
 }

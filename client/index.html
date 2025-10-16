@@ -16,200 +16,17 @@
 </head>
 
 <body>
-  <div id="login-container">
-    <form id="login-form">
-      <h2>Login</h2>
-      <input type="text" id="username" placeholder="Username" required>
-      <input type="password" id="password" placeholder="Password" required>
-      <button type="submit">Login</button>
-      <p id="login-error"></p>
-    </form>
-  </div>
-
-  <div class="page-container" style="display: none;">
-    <div class="mobile-filter">
-      <h2>Фільтри</h2>
-      <div class="filter-group">
-        <label>Сума:</label>
-        <div class="amount-filter-inputs">
-          <input type="number" id="amount-min-mobile" placeholder="Min">
-          <span>-</span>
-          <input type="number" id="amount-max-mobile" placeholder="Max">
-        </div>
-        <div class="double-slider-container" id="double-slider-mobile">
-          <div class="double-slider-track"></div>
-          <div class="double-slider-range" id="double-slider-range-mobile"></div>
-          <div class="double-slider-thumb" id="thumb-min-mobile"></div>
-          <div class="double-slider-thumb" id="thumb-max-mobile"></div>
-        </div>
-      </div>
-      <div class="filter-group">
-        <label>Дата:</label>
-        <div id="date-range-mobile" class="date-range-container">
-          <input type="text" class="date-input" name="start" placeholder="From">
-          <span>-</span>
-          <input type="text" class="date-input" name="end" placeholder="To">
-        </div>
-      </div>
-      <div class="filter-group">
-        <label for="merchant-mobile">Мерчант:</label>
-        <div id="merchant-mobile" class="multi-select-container"></div>
-      </div>
-      <div class="filter-group">
-        <label for="card-mobile">Картка:</label>
-        <div id="card-mobile" class="multi-select-container"></div>
-      </div>
-      <div class="filter-group">
-        <label for="person-mobile">Ім'я:</label>
-        <div id="person-mobile" class="multi-select-container"></div>
-      </div>
-      <div class="filter-group">
-        <label for="category-mobile">Категорія:</label>
-        <div id="category-mobile" class="multi-select-container"></div>
-      </div>
-      <div class="filter-group">
-        <label for="tag-mobile">Тег:</label>
-        <div id="tag-mobile" class="multi-select-container"></div>
-      </div>
-      <button class="apply-btn">Застосувати фільтри</button>
-    </div>
-
-    <div class="desktop-layout">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <h2>Фільтри</h2>
-        </div>
-        <div class="filter-group">
-          <label>Сума:</label>
-          <div class="amount-filter-inputs">
-            <input type="number" id="amount-min" placeholder="Min">
-            <span>-</span>
-            <input type="number" id="amount-max" placeholder="Max">
-          </div>
-          <div class="double-slider-container" id="double-slider-desktop">
-            <div class="double-slider-track"></div>
-            <div class="double-slider-range" id="double-slider-range-desktop"></div>
-            <div class="double-slider-thumb" id="thumb-min-desktop"></div>
-            <div class="double-slider-thumb" id="thumb-max-desktop"></div>
-          </div>
-        </div>
-        <div class="filter-group">
-          <label>Дата:</label>
-          <div id="date-range-desktop" class="date-range-container">
-            <input type="text" class="date-input" name="start" placeholder="From">
-            <span>-</span>
-            <input type="text" class="date-input" name="end" placeholder="To">
-          </div>
-        </div>
-        <div class="filter-group">
-          <label for="merchant">Мерчант:</label>
-          <div id="merchant" class="multi-select-container"></div>
-        </div>
-        <div class="filter-group">
-          <label for="card">Картка:</label>
-          <div id="card" class="multi-select-container"></div>
-        </div>
-        <div class="filter-group">
-          <label for="person">Ім'я:</label>
-          <div id="person" class="multi-select-container"></div>
-        </div>
-        <div class="filter-group">
-          <label for="category">Категорія:</label>
-          <div id="category" class="multi-select-container"></div>
-        </div>
-        <div class="filter-group">
-          <label for="tag">Тег:</label>
-          <div id="tag" class="multi-select-container"></div>
-        </div>
-        <button class="apply-btn desktop-btn">Застосувати фільтри</button>
-      </aside>
-
-      <main class="main-content">
-        <div class="main-tab-container">
-          <div class="main-tab active" data-tab="grouped">Grouped</div>
-          <div class="main-tab" data-tab="transactions">Transactions</div>
-        </div>
-        <div id="grouped-content" class="main-tab-content active">
-          <div class="grouped-options">
-          </div>
-        </div>
-        <div id="transactions-content" class="main-tab-content">
-          <div class="transactions-actions"></div>
-          <div class="transactions-list"></div>
-        </div>
-      </main>
-
-      <aside class="stats-sidebar">
-        <h3>Summary</h3>
-        <div id="summary-content"></div>
-        <h3>By Category</h3>
-        <div class="pie-chart-container">
-          <canvas id="category-chart"></canvas>
-        </div>
-        <h3>By Tags</h3>
-        <div class="pie-chart-container">
-          <canvas id="tags-chart"></canvas>
-        </div>
-        <h3>By Person</h3>
-        <div class="pie-chart-container">
-          <canvas id="person-chart"></canvas>
-        </div>
-      </aside>
-    </div>
-  </div>
-
   <div class="create-btn-container">
     <div class="create-btn-content">
       <a href="#" id="create-new-transaction-btn">New Transaction</a>
       <a href="#" id="import-transaction">Import...</a>
       <a href="#" id="scan-receipt-action-btn">Scan Receipt</a>
+      <a href="#" id="sharing-btn">Sharing</a>
     </div>
     <button class="create-btn">+ New</button>
   </div>
 
-  <!-- The Modal -->
-  <div id="transaction-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-button">&times;</span>
-      <div id="modal-details"></div>
-      <div id="modal-photos"></div>
-      <div class="modal-footer">
-        <button id="delete-transaction-btn" class="apply-btn" style="background-color: #f44336;">Delete</button>
-        <button id="save-changes-btn" class="apply-btn">Зберегти зміни</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Import Modal -->
-  <div id="import-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-button">&times;</span>
-      <div class="tab-container">
-        <div class="tab active" data-tab="csv">CSV</div>
-        <div class="tab" data-tab="cibc">CIBC</div>
-        <div class="tab" data-tab="wealthsimple">Wealthsimple</div>
-      </div>
-      <div id="csv-tab" class="tab-content active">
-        <div class="csv-import-container">
-          <div class="csv-header-example">
-            <p>date,merchant,amount,category,tags</p>
-          </div>
-          <textarea id="csv-input"
-            placeholder="2024-01-01,The Coffee Shop,-3.50,Food,coffee&#10;2024-01-02,Book Store,-25.00,Shopping,books"></textarea>
-        </div>
-        <button id="parse-csv-btn" class="apply-btn">Preview</button>
-      </div>
-      <div id="cibc-tab" class="tab-content">
-        <textarea id="cibc-input" placeholder="Paste your CIBC data here"></textarea>
-        <button id="parse-cibc-btn" class="apply-btn">Preview</button>
-      </div>
-      <div id="wealthsimple-tab" class="tab-content">
-        <textarea id="wealthsimple-input" placeholder="Paste your Wealthsimple data here"></textarea>
-        <button id="parse-wealthsimple-btn" class="apply-btn">Preview</button>
-      </div>
-      <div id="parsed-transactions-container"></div>
-    </div>
-  </div>
 
   <!-- Create New Transaction Modal -->
   <div id="create-new-transaction-modal" class="modal">
@@ -268,6 +85,21 @@
     </div>
   </div>
 
+  <!-- Category Modal -->
+  <div id="category-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h3 id="category-modal-title">Change Category</h3>
+      <div class="editable-field">
+        <label class="editable-label">Category:</label>
+        <select id="category-modal-select" class="modal-input"></select>
+      </div>
+      <div class="modal-footer">
+        <button id="save-category-btn" class="apply-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scan Receipt Modal -->
   <div id="scan-receipt-modal" class="modal">
     <div class="modal-content">
@@ -282,6 +114,15 @@
         <button id="scan-receipt-btn" class="apply-btn">Scan</button>
       </div>
       <div id="parsed-receipt-container"></div>
+    </div>
+  </div>
+
+  <!-- Sharing Modal -->
+  <div id="sharing-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h3>Sharing Settings</h3>
+      <div id="sharing-settings-content"></div>
     </div>
   </div>
 

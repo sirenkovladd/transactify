@@ -1,7 +1,7 @@
 import van from "vanjs-core";
 import { categories, formatOccurredAt, type Transaction, transactions } from './common.ts';
 
-const { div, span, strong, img, input, textarea, select, option } = van.tags;
+const { div, span, strong, img, input, textarea, select, option, button } = van.tags;
 
 function getAllTags() {
   const tagSet = new Set<string>();
@@ -11,7 +11,7 @@ function getAllTags() {
   return Array.from(tagSet).sort();
 }
 
-export function transactionPopup(tr: Transaction) {
+function transactionPopup(tr: Transaction) {
   const modal = document.getElementById('transaction-modal') as HTMLElement;
   const modalDetails = document.getElementById('modal-details') as HTMLElement;
   const modalPhotos = document.getElementById('modal-photos') as HTMLElement;
@@ -314,4 +314,37 @@ export function transactionPopup(tr: Transaction) {
 
     modal.style.display = 'block';
   }
+}
+
+export function setupTransactionPopup() {
+  const openTransactionModal = van.state<Transaction | null>(null);
+  return [
+    openTransactionModal,
+    () => {
+      const tr = openTransactionModal.val;
+      if (tr) {
+        queueMicrotask(() => transactionPopup(tr))
+        return div({
+          id: 'transaction-modal', class: 'modal', style: 'display: block;', onclick: () => {
+            openTransactionModal.val = null;
+          }
+        },
+          div({ class: 'modal-content', onclick: (e: Event) => e.stopPropagation() },
+            span({
+              class: 'close-button', onclick: () => {
+                openTransactionModal.val = null;
+              }
+            }, '×'),
+            div({ id: 'modal-details' },),
+            div({ id: 'modal-photos' },),
+            div({ class: 'modal-footer' },
+              button({ id: 'delete-transaction-btn', class: 'apply-btn', style: 'background-color: #f44336;' }, 'Delete'),
+              button({ id: 'save-changes-btn', class: 'apply-btn' }, 'Зберегти зміни'),
+            ),
+          ),
+        );
+      }
+      return ''
+    }
+  ] as const
 }

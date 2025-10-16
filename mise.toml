@@ -8,7 +8,7 @@ run = "pg_dump -s postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:54
 # env = { NODE_ENV = "production" }
 run = [
   "rm -rf dist",
-  "bun build $([ \"$NODE_ENV\" == \"production\" ] && echo \"--production\") --outdir=dist ./client/index.html",
+  "bun build --sourcemap=inline --outdir=dist ./client/index.html",
 ]
 outputs = ["dist/*"]
 sources = ["client/*"]
