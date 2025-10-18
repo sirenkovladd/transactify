@@ -4,7 +4,12 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
+	"io/fs"
 	"net/http"
+	"path"
+
+	root "code.sirenko.ca/transaction"
 )
 
 type WithDB struct {
@@ -21,6 +26,27 @@ func generateSecureToken(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+type PrefixFS struct {
+	prefix string
+	fs     http.FileSystem
+}
+
+func (pfs PrefixFS) Open(name string) (fs.File, error) {
+	return pfs.fs.Open(path.Join(pfs.prefix, name))
+}
+
+func getFileSystem() http.FileSystem {
+	files, err := root.WebContent.ReadDir("dist")
+	if root.Production && (err == nil || len(files) != 0) {
+		return http.FS(PrefixFS{"dist", http.FS(root.WebContent)})
+	}
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Use hot reload for files")
+	return http.Dir("./dist")
 }
 
 func (db WithDB) GetMux() http.Handler {
@@ -40,7 +66,7 @@ func (db WithDB) GetMux() http.Handler {
 	mux.Handle("/api/sharing/tokens", db.AuthMiddleware(db.GetSharingTokens))
 	mux.Handle("/api/sharing/subscriptions", db.AuthMiddleware(db.GetSubscriptions))
 	mux.Handle("/api/sharing/unsubscribe", db.AuthMiddleware(db.Unsubscribe))
-	mux.Handle("/", http.FileServer(http.Dir("./dist")))
+	mux.Handle("/", http.FileServer(getFileSystem()))
 
 	return mux
 }

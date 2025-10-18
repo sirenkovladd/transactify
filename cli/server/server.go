@@ -33,8 +33,13 @@ func LoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+var (
+	GitCommit = "-"
+)
+
 func main() {
-	log.Println("Init")
+	log.Printf("Init %s\n", GitCommit)
+
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
 	dbname := os.Getenv("POSTGRES_DB")

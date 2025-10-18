@@ -10,13 +10,18 @@ RUN bun build --production --outdir=dist ./client/index.html
 FROM golang:1.25.1 as server
 WORKDIR /app
 ENV CGO_ENABLED=0
-COPY . .
-RUN go build -o /server ./cli/server/server.go
+COPY assets.go go.mod go.sum .
+COPY src src
+COPY server server
+COPY cli cli
+# RUN ls -la & sleep 12
+COPY --from=client /app/dist ./dist
+ARG GIT_COMMIT=unknown
+RUN go build -ldflags "-X 'main.GitCommit=$GIT_COMMIT' -X 'code.sirenko.ca/transaction.production=true'" -o /server ./cli/server/server.go
 
 # Stage 3: Final image
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
-COPY --from=client /app/dist ./dist
 COPY --from=server /server .
 EXPOSE 8080
 CMD ["./server"]

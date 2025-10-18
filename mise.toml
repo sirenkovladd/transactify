@@ -1,17 +1,36 @@
 [env]
 '_'.file = ".env"
+GIT_COMMIT = "{{exec(command='git rev-parse --short HEAD')}}"
+
+[settings]
+task_output = "interleave"
 
 [tasks.dump_schema]
 run = "pg_dump -s postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB > schema.sql"
 
 [tasks.build_client]
-# env = { NODE_ENV = "production" }
 run = [
   "rm -rf dist",
   "bun build --sourcemap=inline --outdir=dist ./client/index.html",
 ]
 outputs = ["dist/*"]
 sources = ["client/*"]
+
+[tasks.start_server]
+env.FLAG = """
+-X 'code.sirenko.ca/transaction.production=true'
+-X 'main.GitCommit={{env.GIT_COMMIT}}'
+"""
+run = ["gow run -ldflags \"$FLAG\" ./cli/server"]
+sources = ["**/*.go"]
+
+[tasks.build_server]
+env.GIT_COMMIT = "{{exec(command='git rev-parse --short HEAD')}}"
+env.FLAG = """
+"""
+run = ["go build -ldflags \"$FLAG\" -o ./dist/server ./cli/server"]
+sources = ["**/*.go"]
+outputs = ["dist/server"]
 
 [tools]
 bun = "latest"
