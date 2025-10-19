@@ -52,6 +52,9 @@ func getFileSystem() http.FileSystem {
 func (db WithDB) GetMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login", db.Login)
+	mux.Handle("POST /api/transaction/{id}/photo", db.AuthMiddleware(db.AttachPhoto))
+	mux.Handle("DELETE /api/photo", db.AuthMiddleware(db.DeletePhotoByPath))
+	mux.Handle("GET /uploads/transaction/{encrypted_user_id}/{encrypted_transaction_id}/{filename}", db.AuthMiddleware(db.GetPhotoByPath))
 	mux.Handle("/api/transactions/add", db.AuthMiddleware(db.AddTransactions))
 	mux.Handle("/api/transactions", db.AuthMiddleware(db.GetTransactions))
 	mux.Handle("/api/transaction/update", db.AuthMiddleware(db.UpdateTransaction))

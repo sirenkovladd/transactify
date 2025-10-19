@@ -132,12 +132,12 @@ func Encrypt(stringToEncrypt string) (string, error) {
 	}
 
 	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
 
 func Decrypt(encryptedString string) (string, error) {
 	key := []byte(os.Getenv("ENCRYPTION_KEY"))
-	enc, _ := base64.StdEncoding.DecodeString(encryptedString)
+	enc, _ := base64.URLEncoding.DecodeString(encryptedString)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {

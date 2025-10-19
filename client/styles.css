@@ -1323,3 +1323,60 @@ summary {
   resize: vertical;
   box-sizing: border-box;
 }
+#modal-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.photo-container {
+  position: relative;
+}
+
+.photo-container img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+}
+
+.delete-photo-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.photo-container:hover .delete-photo-btn {
+  opacity: 1;
+}
+
+.add-photo-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 120px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-photo-btn:hover {
+  background-color: var(--background-dark);
+}
