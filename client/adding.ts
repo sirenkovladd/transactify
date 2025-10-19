@@ -51,14 +51,6 @@ function parseCSV(data: string): any[] {
   });
 }
 
-function parseCIBC(data: string): any[] {
-  // TODO
-  return [
-    { datetime: '2024-01-03T14:00:00', merchant: 'CIBC Merchant 1', amount: 300, category: 'Category 1', tags: '' },
-    { datetime: '2024-01-04T15:00:00', merchant: 'CIBC Merchant 2', amount: 400, category: 'Category 3', tags: 'tag4' },
-  ];
-}
-
 const categoriesMap: Record<string, string[]> = {
   "mobile internet": ["KOODO AIRTIME", "KOODO MOBILE"],
   "internet": ["NOVUS"],
@@ -212,14 +204,13 @@ export function setupAdding() {
   const ImportModalComponent = () => {
     if (!openImportModal.val) return '';
 
-    const active = van.state<'Wealthsimple' | 'CSV' | 'CIBC'>('Wealthsimple');
+    const active = van.state<'Wealthsimple' | 'CSV'>('Wealthsimple');
 
     const Tab = (type: typeof active.val, ...children: ChildDom[]) => div({ class: () => `tab-content${active.val === type ? ' active' : ''}` }, ...children)
 
     const parsedTransactionsContainer = div({ id: 'parsed-transactions-container' });
 
     const wealthsimpleInput = textarea({ id: 'wealthsimple-input', placeholder: 'Paste your Wealthsimple data here' });
-    const cibcInput = textarea({ id: 'cibc-input', placeholder: 'Paste your CIBC data here' });
     const csvInput = textarea({ id: 'csv-input', placeholder: '2024-01-01,The Coffee Shop,-3.50,Food,coffee\n2024-01-02,Book Store,-25.00,Shopping,books' });
 
     const parseData = (input: HTMLTextAreaElement, parser: (data: string) => any[], card?: string) => {
@@ -236,7 +227,7 @@ export function setupAdding() {
       div({ class: 'modal-content', onclick: (e: Event) => e.stopPropagation() },
         span({ class: 'close-button', onclick: () => openImportModal.val = false }, '×'),
         div({ class: 'tab-container' },
-          (['Wealthsimple', 'CIBC', 'CSV'] as const).map((type) => div({
+          (['Wealthsimple', 'CSV'] as const).map((type) => div({
             class: () => `tab${active.val === type ? ' active' : ''}`,
             'data-tab': 'wealthsimple',
             onclick: () => active.val = type,
@@ -245,10 +236,6 @@ export function setupAdding() {
         Tab("Wealthsimple",
           wealthsimpleInput,
           button({ id: 'parse-wealthsimple-btn', class: 'apply-btn', onclick: parseData(wealthsimpleInput, parseWealthsimple, 'wealthsimple') }, 'Preview')
-        ),
-        Tab('CIBC',
-          cibcInput,
-          button({ id: 'parse-cibc-btn', class: 'apply-btn', onclick: parseData(cibcInput, parseCIBC, 'cibc') }, 'Preview')
         ),
         Tab('CSV',
           div({ class: 'csv-import-container' },

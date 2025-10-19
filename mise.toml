@@ -18,7 +18,6 @@ sources = ["client/*"]
 
 [tasks.start_server]
 env.FLAG = """
--X 'code.sirenko.ca/transaction.production=true'
 -X 'main.GitCommit={{env.GIT_COMMIT}}'
 """
 run = ["gow run -ldflags \"$FLAG\" ./cli/server"]

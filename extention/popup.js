@@ -1,9 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
   const fetchButton = document.getElementById('fetchButton');
+  const parseButton = document.getElementById('parseButton');
   const statusDiv = document.getElementById('status');
   const dateRangeDiv = document.getElementById('dateRange');
   const firstDateEl = document.getElementById('firstDate');
   const lastDateEl = document.getElementById('lastDate');
+
+  parseButton.addEventListener('click', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      chrome.tabs.sendMessage(tab.id, { action: "parseTransactions" }, (response) => {
+        if (chrome.runtime.lastError) {
+          statusDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
+          return;
+        }
+        if (response.status === 'success') {
+          statusDiv.textContent = `Parsed ${response.count} transactions.`;
+        } else {
+          statusDiv.textContent = 'Failed to parse: ' + response.message;
+        }
+      });
+    }
+  });
+
 
   /**
    * @typedef {Object} Transaction

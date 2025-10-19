@@ -5,12 +5,26 @@
   "description": "Fetches transactions and sends them to an external server.",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "action": {
     "default_popup": "popup.html"
   },
   "host_permissions": [
-    "https://your-external-server.com/*"
+    "https://your-external-server.com/*",
+    "https://www.cibconline.cibc.com/*",
+    "https://*.wealthsimple.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.cibconline.cibc.com/*",
+        "https://*.wealthsimple.com/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
   ]
 }
