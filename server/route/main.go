@@ -10,6 +10,7 @@ import (
 	"path"
 
 	root "code.sirenko.ca/transaction"
+	"code.sirenko.ca/transaction/server"
 )
 
 type WithDB struct {
@@ -38,12 +39,8 @@ func (pfs PrefixFS) Open(name string) (fs.File, error) {
 }
 
 func getFileSystem() http.FileSystem {
-	files, err := root.WebContent.ReadDir("dist")
-	if root.Production && (err == nil || len(files) != 0) {
+	if server.Production {
 		return http.FS(PrefixFS{"dist", http.FS(root.WebContent)})
-	}
-	if err != nil {
-		fmt.Println(err)
 	}
 	fmt.Println("Use hot reload for files")
 	return http.Dir("./dist")

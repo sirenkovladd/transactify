@@ -26,8 +26,9 @@ sources = ["**/*.go"]
 [tasks.build_server]
 env.GIT_COMMIT = "{{exec(command='git rev-parse --short HEAD')}}"
 env.FLAG = """
+-s -w -X 'main.GitCommit={{env.GIT_COMMIT}}'
 """
-run = ["go build -ldflags \"$FLAG\" -o ./dist/server ./cli/server"]
+run = ["go build -ldflags \"$FLAG\" -tags prod -o ./dist/server ./cli/server"]
 sources = ["**/*.go"]
 outputs = ["dist/server"]
 
