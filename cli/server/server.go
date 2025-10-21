@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,9 +28,19 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 func LoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timeStart := time.Now()
+		headers, err := json.Marshal(r.Header)
+		if err != nil {
+			log.Printf("Error marshaling headers: %v\n", err)
+		} else {
+			log.Printf("Headers: %s, %s\n", string(headers), r.Host)
+		}
 		lrw := &loggingResponseWriter{w, http.StatusOK}
+		ip := r.Header.Get("Cf-Connecting-Ip")
+		if ip == "" {
+			ip = r.RemoteAddr
+		}
 		next.ServeHTTP(lrw, r)
-		log.Printf("%s %s - %s - %dms - HTTP-%d", r.Method, r.URL.Path, r.RemoteAddr, time.Since(timeStart).Milliseconds(), lrw.statusCode)
+		log.Printf("%s %s - %s - %dms - HTTP-%d", r.Method, r.URL.Path, ip, time.Since(timeStart).Milliseconds(), lrw.statusCode)
 	})
 }
 
@@ -55,8 +66,17 @@ func main() {
 
 	router := route.NewWithDB(db)
 
-	log.Print("listening on :8080...")
-	err = http.ListenAndServe(":8080", LoggerMiddleware(router.GetMux()))
+	certFile := os.Getenv("CERT_FILE")
+	keyFile := os.Getenv("KEY_FILE")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("listening on :%s...", port)
+
+	err = http.ListenAndServeTLS(fmt.Sprintf(":%s", port), certFile, keyFile, LoggerMiddleware(router.GetMux()))
 	if err != nil {
 		panic(err)
 	}
