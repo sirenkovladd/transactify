@@ -1,5 +1,3 @@
-ALTER SCHEMA public OWNER TO "user";
-
 CREATE TABLE public.sessions (
     session_id integer NOT NULL,
     user_id integer,
@@ -242,16 +240,3 @@ ALTER TABLE ONLY public.transaction_tags
 
 ALTER TABLE ONLY public.transaction_tags
     ADD CONSTRAINT transaction_tags_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transactions(transaction_id) ON DELETE CASCADE;
-
-
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: user
---
-
-REVOKE USAGE ON SCHEMA public FROM PUBLIC;
-GRANT ALL ON SCHEMA public TO PUBLIC;
-
-
---
--- PostgreSQL database dump complete
---
