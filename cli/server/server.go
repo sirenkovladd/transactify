@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,12 +27,12 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 func LoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timeStart := time.Now()
-		headers, err := json.Marshal(r.Header)
-		if err != nil {
-			log.Printf("Error marshaling headers: %v\n", err)
-		} else {
-			log.Printf("Headers: %s, %s\n", string(headers), r.Host)
-		}
+		// headers, err := json.Marshal(r.Header)
+		// if err != nil {
+		// 	log.Printf("Error marshaling headers: %v\n", err)
+		// } else {
+		// 	log.Printf("Headers: %s, %s\n", string(headers), r.Host)
+		// }
 		lrw := &loggingResponseWriter{w, http.StatusOK}
 		ip := r.Header.Get("Cf-Connecting-Ip")
 		if ip == "" {

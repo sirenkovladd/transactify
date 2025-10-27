@@ -19,8 +19,8 @@ export function renderSharingSettings(container: HTMLElement) {
 
   const Tokens = () => div(
     h3("Your Sharing Tokens"),
-    ul(
-      () => tokens.val.map(token => li(
+    () => ul(
+      tokens.val.map(token => li(
         span(token),
         button({ onclick: async () => { await revokeToken(token); fetchTokens(); } }, "Revoke")
       ))
@@ -32,8 +32,8 @@ export function renderSharingSettings(container: HTMLElement) {
     h3("Sharing Connections"),
     div(
       h3("They see my transactions"),
-      ul(
-        () => subscriptions.val.subscribers.map(personName => li(
+      () => ul(
+        subscriptions.val.subscribers.map(personName => li(
           span(personName),
           // No unsubscribe action for subscribers, as they are subscribing to you
         ))
@@ -41,8 +41,8 @@ export function renderSharingSettings(container: HTMLElement) {
     ),
     div(
       h3("I see their transactions"),
-      ul(
-        () => subscriptions.val.subscriptions.map(sub => li(
+      () => ul(
+        subscriptions.val.subscriptions.map(sub => li(
           span(sub.PersonName),
           button({ onclick: async () => { await unsubscribe(sub.EncryptedUserID); fetchSubscriptions(); } }, "Unsubscribe")
         ))

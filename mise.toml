@@ -17,6 +17,8 @@ outputs = ["dist/*"]
 sources = ["client/*"]
 
 [tasks.start_server]
+env.KEY_FILE = "q.pem"
+env.CERT_FILE = "q.pem.pub"
 env.FLAG = """
 -X 'main.GitCommit={{env.GIT_COMMIT}}'
 """

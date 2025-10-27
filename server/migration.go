@@ -15,7 +15,7 @@ func ApplyMigrations(db *sql.DB) {
 		log.Fatalf("Failed to create schema_migrations table: %v", err)
 	}
 
-	files, err := filepath.Glob("cli/server/migrations/*.sql")
+	files, err := filepath.Glob("server/migrations/*.sql")
 	if err != nil {
 		log.Fatalf("Failed to find migration files: %v", err)
 	}

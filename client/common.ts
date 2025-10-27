@@ -1,4 +1,5 @@
 import van, { type State } from "vanjs-core";
+import { categoriesMap } from "./const";
 
 const { div, span, p, h3, strong } = van.tags;
 
@@ -34,7 +35,7 @@ const amountMin = params.get('amountMin');
 const amountMax = params.get('amountMax');
 
 export const transactions = van.state<Transaction[]>([])
-export const categories = van.state<string[]>([]);
+export const categories = van.state<string[]>(Object.keys(categoriesMap));
 export const categoriesFromTransaction = van.derive(() => [...new Set(transactions.val.map(t => t.category))]);
 export const merchants = van.derive(() => [...new Set(transactions.val.map(t => t.merchant))]);
 export const cards = van.derive(() => [...new Set(transactions.val.map(t => t.card))]);
@@ -136,28 +137,36 @@ export async function fetchTransactions() {
     const headers = {
       'Authorization': `Bearer ${token.val}`
     };
-    const [transactionsResponse, categoriesResponse] = await Promise.all([
+    const [
+      transactionsResponse,
+      // categoriesResponse,
+    ] = await Promise.all([
       fetch("/api/transactions", { headers }),
-      fetch("/api/categories", { headers })
+      // fetch("/api/categories", { headers })
     ]);
 
-    if (transactionsResponse.status === 401 || categoriesResponse.status === 401) {
+    if (transactionsResponse.status === 401) {
       token.val = '';
       return;
     }
 
+    // if (categoriesResponse.status === 401) {
+    //   token.val = '';
+    //   return;
+    // }
+
     if (!transactionsResponse.ok) {
       throw new Error('Failed to fetch transactions');
     }
-    if (!categoriesResponse.ok) {
-      throw new Error('Failed to fetch categories');
-    }
+    // if (!categoriesResponse.ok) {
+    //   throw new Error('Failed to fetch categories');
+    // }
 
     const transactionsData = await transactionsResponse.json();
     transactions.val = transactionsData;
 
-    const categoriesData = await categoriesResponse.json();
-    categories.val = categoriesData;
+    // const categoriesData = await categoriesResponse.json();
+    // categories.val = categoriesData;
 
   } catch (e: any) {
     error.val = e.message;
@@ -320,6 +329,10 @@ export function getIcon(category: string) {
       return "🏨";
     case "visa":
       return "💳";
+    case "volleyball":
+      return "🏐";
+    case "unknown":
+      return "❓";
     default:
       return "🛍️";
   }

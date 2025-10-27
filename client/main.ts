@@ -107,7 +107,9 @@ function DesktopLayout(transactionModal: State<Transaction | null>) {
       div({ class: 'filter-group' },
         label('Дата:'),
         div({ id: 'date-range-desktop', class: 'date-range-container' },
-          // 
+          input({ type: 'text', class: 'date-input', name: 'start', placeholder: 'From' }),
+          span('-'),
+          input({ type: 'text', class: 'date-input', name: 'end', placeholder: 'To' }),
         ),
       ),
       div({ class: 'filter-group' },
@@ -230,12 +232,15 @@ function mainInit() {
   const [openImportModal, ImportModalComponent] = setupAdding();
   van.add(document.body, () => App(openTransactionModal), TransactionPopup, ImportModalComponent)
 
-  setupFilters();
-  setupGroup();
-  setupTagModal();
-  setupCategoryModal();
-  setupSharingModal(); // Call the new setup function
-  setupStats();
+  queueMicrotask(() => {
+    setupFilters();
+    setupGroup();
+    setupTagModal();
+    setupCategoryModal();
+    setupSharingModal(); // Call the new setup function
+    setupStats();
+  })
+
 }
 
 document.addEventListener("DOMContentLoaded", mainInit);
