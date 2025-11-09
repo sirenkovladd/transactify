@@ -23,5 +23,6 @@ RUN go build -ldflags "-s -w -X 'main.GitCommit=$GIT_COMMIT'" -tags prod -o /ser
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
 COPY --from=server /server .
+COPY ./server/migration ./server/migration
 EXPOSE 8080
 CMD ["./server"]

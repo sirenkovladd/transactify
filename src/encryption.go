@@ -112,8 +112,20 @@ func ComparePasswordAndHash(password, encodedHash string) (match bool, err error
 	return false, nil
 }
 
+var _key = []byte(os.Getenv("ENCRYPTION_KEY"))
+
+func getKey() ([]byte, error) {
+	if len(_key) == 0 {
+		return nil, errors.New("empty key")
+	}
+	return _key, nil
+}
+
 func Encrypt(stringToEncrypt string) (string, error) {
-	key := []byte(os.Getenv("ENCRYPTION_KEY"))
+	key, err := getKey()
+	if err != nil {
+		return "", err
+	}
 	plaintext := []byte(stringToEncrypt)
 
 	block, err := aes.NewCipher(key)
@@ -136,8 +148,12 @@ func Encrypt(stringToEncrypt string) (string, error) {
 }
 
 func Decrypt(encryptedString string) (string, error) {
-	key := []byte(os.Getenv("ENCRYPTION_KEY"))
 	enc, _ := base64.URLEncoding.DecodeString(encryptedString)
+
+	key, err := getKey()
+	if err != nil {
+		return "", err
+	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {

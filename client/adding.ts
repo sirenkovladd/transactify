@@ -1,6 +1,6 @@
 import van, { type ChildDom, type State } from "vanjs-core";
 import { addTransactions, categories, type NewTransaction } from './common.ts';
-import { categoriesMap } from "./const.ts";
+import { categoriesMap, type Categories } from "./const.ts";
 
 const { div, span, p, h3, strong, table, thead, tbody, tr, th, td, input, button, option, select, textarea } = van.tags;
 
@@ -52,15 +52,93 @@ function parseCSV(data: string): any[] {
   });
 }
 
-function getCategory(merchant: string): string {
+const cibcMerchant: Record<string, Categories> = {
+  "0001": "home goods",
+  "0002": "unknown",
+  "0004": "transportation",
+  "0005": "hotel",
+  "0003": "food & other",
+  "0006": "takeouts",
+  "0007": "home goods",
+  "0008": "health",
+  "0009": "unknown",
+  "0010": "unknown",
+  "0011": "unknown"
+}
+
+function categoryFallback(merchantCategoryId: string): Categories {
+  return cibcMerchant[merchantCategoryId] || 'unknown';
+}
+
+function parseCIBC(data: string): any[] {
+  let payload: any[] = [];
+
+  try {
+    const parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      payload = parsed;
+    } else if (parsed && Array.isArray(parsed.transactions)) {
+      // Support wrapped shape if needed
+      payload = parsed.transactions;
+    } else {
+      console.error('Unexpected CIBC payload format');
+      return [];
+    }
+  } catch (e) {
+    console.error('Failed to parse CIBC JSON', e);
+    return [];
+  }
+
+  return payload.filter(e => e.descriptionLine1 !== 'PAYMENT THANK YOU/PAIEMEN').map((item) => {
+    const merchant = item.descriptionLine1 || item.transactionDescription || '';
+    const categoryFromMap = getCategory(merchant);
+    const category =
+      categoryFromMap && categoryFromMap !== 'unknown'
+        ? categoryFromMap
+        : categoryFallback(item.merchantCategoryId);
+
+    // Prefer debit as negative, fallback to credit as positive
+    let amount = 0;
+    if (item.debit != null) {
+      amount = Math.abs(Number(item.debit) || 0);
+    } else if (item.credit != null) {
+      amount = -Math.abs(Number(item.credit) || 0);
+    }
+
+    // Normalize datetime to 'YYYY-MM-DDTHH:mm'
+    let datetime = item.date || item.postedDate || '';
+    if (datetime) {
+      const d = new Date(datetime);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const day = d.getDate().toString().padStart(2, '0');
+        const hours = d.getHours().toString().padStart(2, '0');
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        datetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+    }
+
+    return {
+      datetime,
+      merchant,
+      amount,
+      category,
+      card: 'cibc',
+      tags: '',
+    };
+  });
+}
+
+function getCategory(merchant: string): Categories {
   for (const [category, merchants] of Object.entries(categoriesMap)) {
     for (const pattern of merchants) {
       if (merchant.toLowerCase().includes(pattern.toLowerCase())) {
-        return category;
+        return category as Categories;
       }
     }
   }
-  return "Unknown";
+  return "unknown";
 }
 
 function parseWealthsimple(data: string): any[] {
@@ -181,13 +259,14 @@ export function setupAdding() {
   const ImportModalComponent = () => {
     if (!openImportModal.val) return '';
 
-    const active = van.state<'Wealthsimple' | 'CSV'>('Wealthsimple');
+    const active = van.state<'Wealthsimple' | 'CSV' | 'CIBC'>('Wealthsimple');
 
     const Tab = (type: typeof active.val, ...children: ChildDom[]) => div({ class: () => `tab-content${active.val === type ? ' active' : ''}` }, ...children)
 
     const parsedTransactionsContainer = div({ id: 'parsed-transactions-container' });
 
     const wealthsimpleInput = textarea({ id: 'wealthsimple-input', placeholder: 'Paste your Wealthsimple data here' });
+    const cibcInput = textarea({ id: 'cibc-input', placeholder: 'Paste your CIBC data here' });
     const csvInput = textarea({ id: 'csv-input', placeholder: '2024-01-01,The Coffee Shop,-3.50,Food,coffee\n2024-01-02,Book Store,-25.00,Shopping,books' });
 
     const parseData = (input: HTMLTextAreaElement, parser: (data: string) => any[], card?: string) => {
@@ -204,7 +283,7 @@ export function setupAdding() {
       div({ class: 'modal-content', onclick: (e: Event) => e.stopPropagation() },
         span({ class: 'close-button', onclick: () => openImportModal.val = false }, '×'),
         div({ class: 'tab-container' },
-          (['Wealthsimple', 'CSV'] as const).map((type) => div({
+          (['Wealthsimple', 'CIBC', 'CSV'] as const).map((type) => div({
             class: () => `tab${active.val === type ? ' active' : ''}`,
             'data-tab': 'wealthsimple',
             onclick: () => active.val = type,
@@ -213,6 +292,10 @@ export function setupAdding() {
         Tab("Wealthsimple",
           wealthsimpleInput,
           button({ id: 'parse-wealthsimple-btn', class: 'apply-btn', onclick: parseData(wealthsimpleInput, parseWealthsimple, 'wealthsimple') }, 'Preview')
+        ),
+        Tab('CIBC',
+          cibcInput,
+          button({ id: 'parse-cibc-btn', class: 'apply-btn', onclick: parseData(cibcInput, parseCIBC, 'cibc') }, 'Preview')
         ),
         Tab('CSV',
           div({ class: 'csv-import-container' },

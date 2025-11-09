@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"code.sirenko.ca/transaction/server"
@@ -53,8 +54,19 @@ func main() {
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
 	dbname := os.Getenv("POSTGRES_DB")
+	dbport := os.Getenv("POSTGRES_PORT")
+	if dbport == "" {
+		dbport = "5432"
+	}
 	db_host := os.Getenv("POSTGRES_HOST")
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=disable", user, password, db_host, dbname)
+	connStr := fmt.Sprintf(
+		"user=%s password='%s' host=%s port=%s dbname=%s sslmode=disable",
+		user,
+		strings.ReplaceAll(password, "'", "\\'"),
+		db_host,
+		dbport,
+		dbname,
+	)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)

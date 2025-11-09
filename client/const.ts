@@ -1,4 +1,4 @@
-export const categoriesMap: Record<string, string[]> = {
+export const categoriesMap = {
   "mobile internet": ["KOODO AIRTIME", "KOODO MOBILE"],
   "internet": ["NOVUS"],
   "food & other": ["SAVE ON FOODS", "URBAN FARE", "NOFRILLS JOTI'S", "BC LIQUOR", "LENA MARKET", "WHOLE FOODS", "JASMINE HALAL MEATS AND M", "EAST WEST MARKET", "PIAST BAKERY", "POLO FARMERS MARKET 2", "ORGANIC ACRES MARKET", "MARKET MEATS KITSILAN", "SEVEN SEAS FISH MARKET ON", "LITTLE GEM GROCERY", "TOP TEN PRODUCE", "BERRYMOBILE", "LEGACY LIQUOR STORE", "VALHALLA PURE OUTFITTERS", "OSYOOS PRODUCE", "SQ *OH SWEET DAY BAKE SH", "Body Energy Club", "Aburi Market"],
@@ -12,14 +12,17 @@ export const categoriesMap: Record<string, string[]> = {
   "donations": [],
   "therapy": [],
   "english": [],
-  "french": ["Preply"],
+  "subscriptions": [],
+  "french": [],
   "events": ["TICKETLEADER", "SEATGEEK TICKETS", "ROYAL BC MUSEUM", "FOX CABARET", "BOUNCE* TICKET", "Cineplex", "Eventbrite"],
   "travel": ["VIA RAIL/ZAW99N", "AIR CAN*", "BOOKING.COM", "Wb E-Store"],
   "london drugs": ["LONDON DRUGS", "SHOPPERS DRUG"],
   "taxAccountant": ["LILICO"],
   "film": ["Amazon Channels", "PrimeVideo"],
   "hotel": ["Hotel at"],
-  "visa": ["Ups"],
+  "visa": [],
   "volleyball": [],
   "unknown": [],
 };
+
+export type Categories = keyof typeof categoriesMap;
