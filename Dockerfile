@@ -17,12 +17,12 @@ COPY cli cli
 # RUN ls -la & sleep 12
 COPY --from=client /app/dist ./dist
 ARG GIT_COMMIT=unknown
-RUN go build -ldflags "-s -w -X 'main.GitCommit=$GIT_COMMIT'" -tags prod -o /server ./cli/server/server.go
+RUN go build -ldflags "-s -w -X 'main.GitCommit=$GIT_COMMIT'" -tags prod -o /app/app ./cli/server/server.go
 
 # Stage 3: Final image
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
-COPY --from=server /server .
-COPY ./server/migration ./server/migration
+COPY ./server/migrations ./server/migrations
+COPY --from=server /app/app .
 EXPOSE 8080
-CMD ["./server"]
+CMD ["./app"]
