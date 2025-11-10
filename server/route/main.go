@@ -66,6 +66,7 @@ func (db WithDB) GetMux() http.Handler {
 	mux.Handle("/api/sharing/tokens", db.AuthMiddleware(db.GetSharingTokens))
 	mux.Handle("/api/sharing/subscriptions", db.AuthMiddleware(db.GetSubscriptions))
 	mux.Handle("/api/sharing/unsubscribe", db.AuthMiddleware(db.Unsubscribe))
+	mux.Handle("/api/logout", db.AuthMiddleware(db.Logout))
 	mux.Handle("/", http.FileServer(getFileSystem()))
 
 	return mux

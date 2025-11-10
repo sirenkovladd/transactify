@@ -1,5 +1,5 @@
 import van, { type ChildDom, type State } from "vanjs-core";
-import { addTransactions, categories, transactions, type NewTransaction } from './common.ts';
+import { addTransactions, categories, logout, transactions, type NewTransaction } from './common.ts';
 import { categoriesMap, type Categories } from "./const.ts";
 
 const { div, span, p, input, button, option, select, textarea, label, a } = van.tags;
@@ -577,6 +577,7 @@ export function setupAdding() {
         a({ id: 'import-transaction', onclick: () => (openImportModal.val = true) }, 'Import...'),
         a({ id: 'scan-receipt-action-btn' }, 'Scan Receipt'),
         a({ id: 'sharing-btn' }, 'Sharing'),
+        a({ id: 'logout-btn', onclick: () => logout() }, 'Logout'),
       ),
       button({
         class: 'create-btn',

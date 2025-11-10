@@ -1,7 +1,7 @@
 import van, { type State } from "vanjs-core";
 import { setupAdding } from "./adding.ts";
 import { openCategoryModal, setupCategoryModal } from "./category.ts";
-import { activeTab, convertTransaction, error, filteredTransactions, loading, loggedIn, type Transaction } from './common.ts';
+import { activeTab, convertTransaction, error, filteredTransactions, loading, loggedIn, logout, type Transaction } from './common.ts';
 import { setupFilters } from "./filter.ts";
 import { setupGroup } from "./group.ts";
 import { Login } from "./login.ts";
@@ -209,6 +209,7 @@ function DesktopLayout(transactionModal: State<Transaction | null>) {
       div({ class: 'pie-chart-container' },
         canvas({ id: 'person-chart' }),
       ),
+      button({ class: 'apply-btn', style: 'display: block; margin-top: 20px;', onclick: () => logout() }, 'Logout'),
     ),
   );
 }

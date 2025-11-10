@@ -518,3 +518,27 @@ export async function unsubscribe(encryptedUserId: string) {
     error.val = e.message;
   }
 }
+
+export async function logout() {
+  if (!token.val) {
+    return;
+  }
+  try {
+    const response = await fetch('/api/logout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token.val}`
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Logout failed: ${errorText}`);
+    }
+  } catch (e: any) {
+    // Still log out on the client even if server fails
+    console.error(e.message);
+  } finally {
+    token.val = '';
+  }
+}
