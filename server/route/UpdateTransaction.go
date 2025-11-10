@@ -1,6 +1,7 @@
 package route
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -34,6 +35,38 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 
 	if payload.ID == 0 {
 		http.Error(w, "Transaction ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the user has access to this transaction
+	var transactionOwnerId int
+	err := db.db.QueryRow("SELECT user_id FROM transactions WHERE transaction_id = $1", payload.ID).Scan(&transactionOwnerId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Transaction not found", http.StatusNotFound)
+			return
+		}
+		log.Printf("Error querying transaction owner: %v", err)
+		http.Error(w, "Failed to check transaction permissions", http.StatusInternalServerError)
+		return
+	}
+
+	hasAccess := (userId == transactionOwnerId)
+	if !hasAccess {
+		var exists int
+		err := db.db.QueryRow("SELECT 1 FROM user_connections WHERE user_id = $1 AND connected_user_id = $2", transactionOwnerId, userId).Scan(&exists)
+		if err != nil && err != sql.ErrNoRows {
+			log.Printf("Error checking user connection: %v", err)
+			http.Error(w, "Failed to check transaction permissions", http.StatusInternalServerError)
+			return
+		}
+		if err == nil {
+			hasAccess = true
+		}
+	}
+
+	if !hasAccess {
+		http.Error(w, "You do not have permission to update this transaction", http.StatusForbidden)
 		return
 	}
 
@@ -83,7 +116,7 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 		finalQuery := query.String()
 		finalQuery = finalQuery[:len(finalQuery)-2]
 		finalQuery += fmt.Sprintf(" WHERE transaction_id = $%d AND user_id = $%d", paramId, paramId+1)
-		params = append(params, payload.ID, userId)
+		params = append(params, payload.ID, transactionOwnerId)
 
 		res, err := db.db.Exec(finalQuery, params...)
 		if err != nil {
@@ -100,7 +133,7 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 		}
 
 		if rowsAffected == 0 {
-			http.Error(w, "Transaction not found", http.StatusNotFound)
+			http.Error(w, "Transaction not found or no changes to apply", http.StatusNotFound)
 			return
 		}
 	}
