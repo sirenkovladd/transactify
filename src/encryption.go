@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -112,13 +113,13 @@ func ComparePasswordAndHash(password, encodedHash string) (match bool, err error
 	return false, nil
 }
 
-var _key = []byte(os.Getenv("ENCRYPTION_KEY"))
+var _key, err = hex.DecodeString(os.Getenv("ENCRYPTION_KEY"))
 
 func getKey() ([]byte, error) {
 	if len(_key) == 0 {
 		return nil, errors.New("empty key")
 	}
-	return _key, nil
+	return _key, err
 }
 
 func Encrypt(stringToEncrypt string) (string, error) {
@@ -144,11 +145,11 @@ func Encrypt(stringToEncrypt string) (string, error) {
 	}
 
 	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
-	return base64.URLEncoding.EncodeToString(ciphertext), nil
+	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
 func Decrypt(encryptedString string) (string, error) {
-	enc, _ := base64.URLEncoding.DecodeString(encryptedString)
+	enc, _ := base64.RawURLEncoding.DecodeString(encryptedString)
 
 	key, err := getKey()
 	if err != nil {
