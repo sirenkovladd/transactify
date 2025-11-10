@@ -229,8 +229,7 @@ function App(transactionModal: State<Transaction | null>) {
 
 function mainInit() {
   const [openTransactionModal, TransactionPopup] = setupTransactionPopup();
-  const [openImportModal, ImportModalComponent] = setupAdding();
-  van.add(document.body, () => App(openTransactionModal), TransactionPopup, ImportModalComponent)
+  van.add(document.body, () => App(openTransactionModal), TransactionPopup, ...setupAdding())
 
   queueMicrotask(() => {
     setupFilters();
