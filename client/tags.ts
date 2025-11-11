@@ -1,4 +1,4 @@
-import { fetchTransactions, transactions } from "./common.ts";
+import { fetchTransactions, token, transactions } from "./common.ts";
 
 let currentTransactionIDs: number[] = [];
 
@@ -22,7 +22,10 @@ export function setupTagModal() {
         try {
             const response = await fetch('/api/transactions/tags', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token.val}`
+                },
                 body: JSON.stringify({
                     transaction_ids: currentTransactionIDs,
                     tag: tag,
