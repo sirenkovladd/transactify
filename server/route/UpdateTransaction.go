@@ -80,7 +80,7 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 		defer tx.Rollback()
 
 		// Get current tags
-		rows, err := tx.Query("SELECT t.name, t.tag_id FROM tags t JOIN transaction_tags tt ON t.tag_id = tt.tag_id WHERE tt.transaction_id = $1", payload.ID)
+		rows, err := tx.Query("SELECT t.tag_name, t.tag_id FROM tags t JOIN transaction_tags tt ON t.tag_id = tt.tag_id WHERE tt.transaction_id = $1", payload.ID)
 		if err != nil {
 			log.Printf("Error fetching current tags for transaction %d: %v", payload.ID, err)
 			http.Error(w, "Failed to update tags", http.StatusInternalServerError)
@@ -128,9 +128,9 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 		for tagName := range newTags {
 			if _, exists := currentTags[tagName]; !exists {
 				var tagId int
-				err := tx.QueryRow("SELECT tag_id FROM tags WHERE name = $1 AND user_id = $2", tagName, transactionOwnerId).Scan(&tagId)
+				err := tx.QueryRow("SELECT tag_id FROM tags WHERE tag_name = $1", tagName).Scan(&tagId)
 				if err == sql.ErrNoRows {
-					err = tx.QueryRow("INSERT INTO tags (name, user_id) VALUES ($1, $2) RETURNING tag_id", tagName, transactionOwnerId).Scan(&tagId)
+					err = tx.QueryRow("INSERT INTO tags (tag_name) VALUES ($1) RETURNING tag_id", tagName).Scan(&tagId)
 					if err != nil {
 						log.Printf("Error creating new tag '%s': %v", tagName, err)
 						http.Error(w, "Failed to update tags", http.StatusInternalServerError)
