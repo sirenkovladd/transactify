@@ -70,6 +70,94 @@ func (db WithDB) UpdateTransaction(w http.ResponseWriter, r *http.Request, userI
 		return
 	}
 
+	if payload.Tags != nil {
+		tx, err := db.db.Begin()
+		if err != nil {
+			log.Printf("Error starting transaction for tags update: %v", err)
+			http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+			return
+		}
+		defer tx.Rollback()
+
+		// Get current tags
+		rows, err := tx.Query("SELECT t.name, t.tag_id FROM tags t JOIN transaction_tags tt ON t.tag_id = tt.tag_id WHERE tt.transaction_id = $1", payload.ID)
+		if err != nil {
+			log.Printf("Error fetching current tags for transaction %d: %v", payload.ID, err)
+			http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		currentTags := make(map[string]int)
+		for rows.Next() {
+			var name string
+			var id int
+			if err := rows.Scan(&name, &id); err != nil {
+				log.Printf("Error scanning current tag for transaction %d: %v", payload.ID, err)
+				http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+				return
+			}
+			currentTags[name] = id
+		}
+		if rows.Err() != nil {
+			log.Printf("Error iterating current tags for transaction %d: %v", payload.ID, rows.Err())
+			http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+			return
+		}
+
+		newTags := make(map[string]bool)
+		for _, tagName := range payload.Tags {
+			if tagName != "" {
+				newTags[tagName] = true
+			}
+		}
+
+		// Tags to delete
+		for tagName, tagId := range currentTags {
+			if !newTags[tagName] {
+				_, err := tx.Exec("DELETE FROM transaction_tags WHERE transaction_id = $1 AND tag_id = $2", payload.ID, tagId)
+				if err != nil {
+					log.Printf("Error deleting tag '%s' from transaction %d: %v", tagName, payload.ID, err)
+					http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+
+		// Tags to add
+		for tagName := range newTags {
+			if _, exists := currentTags[tagName]; !exists {
+				var tagId int
+				err := tx.QueryRow("SELECT tag_id FROM tags WHERE name = $1 AND user_id = $2", tagName, transactionOwnerId).Scan(&tagId)
+				if err == sql.ErrNoRows {
+					err = tx.QueryRow("INSERT INTO tags (name, user_id) VALUES ($1, $2) RETURNING tag_id", tagName, transactionOwnerId).Scan(&tagId)
+					if err != nil {
+						log.Printf("Error creating new tag '%s': %v", tagName, err)
+						http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+						return
+					}
+				} else if err != nil {
+					log.Printf("Error querying for tag '%s': %v", tagName, err)
+					http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+					return
+				}
+
+				_, err = tx.Exec("INSERT INTO transaction_tags (transaction_id, tag_id) VALUES ($1, $2)", payload.ID, tagId)
+				if err != nil {
+					log.Printf("Error associating tag '%s' with transaction %d: %v", tagName, payload.ID, err)
+					http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			log.Printf("Error committing tags update for transaction %d: %v", payload.ID, err)
+			http.Error(w, "Failed to update tags", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	var query strings.Builder
 	query.WriteString("UPDATE transactions SET ")
 
