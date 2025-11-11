@@ -1,4 +1,4 @@
-import van from "vanjs-core";
+import van, { type State } from "vanjs-core";
 import { convertTransaction, fetchTransactions, filteredTransactions, groupedOption, groupedOptions, type Transaction } from './common.ts';
 import { openTagModal } from "./tags.ts";
 
@@ -63,7 +63,7 @@ async function manageGroupTags(transactionIDs: number[], tag: string, action: 'a
   }
 }
 
-export function setupGroup() {
+export function setupGroup(openTransactionModal: State<Transaction | null>) {
   const groupedContent = document.getElementById("grouped-content");
   if (groupedContent) {
     const groupedOptionsEl = document.querySelector(".grouped-options");
@@ -112,7 +112,7 @@ export function setupGroup() {
                 }, '+ Tag')
               )
             ),
-            div(transactions.map(convertTransaction))
+            () => div(transactions.map((t) => convertTransaction(t, openTransactionModal)))
           ));
         }
         return content;

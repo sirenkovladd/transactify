@@ -234,7 +234,7 @@ function mainInit() {
 
   queueMicrotask(() => {
     setupFilters();
-    setupGroup();
+    setupGroup(openTransactionModal);
     setupTagModal();
     setupCategoryModal();
     setupSharingModal(); // Call the new setup function
