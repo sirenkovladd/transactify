@@ -1,5 +1,6 @@
-import van, { type State } from "vanjs-core";
+import van from "vanjs-core";
 import { categoriesMap } from "./const";
+import { openTransactionModal } from "./popup";
 
 const { div, span, p, h3, strong } = van.tags;
 
@@ -362,7 +363,7 @@ export const groupedOptions = {
   people: (tr: Transaction) => tr.personName,
 };
 
-export function convertTransaction(tr: Transaction, transactionModal: State<Transaction | null>) {
+export function convertTransaction(tr: Transaction) {
   const card = div({ class: "transaction-card" }, [
     div({ class: "card-header" }, [
       span({ class: "category-icon" }, getIcon(tr.category)),
@@ -383,7 +384,7 @@ export function convertTransaction(tr: Transaction, transactionModal: State<Tran
   ]);
 
   card.addEventListener('click', () => {
-    transactionModal.val = tr;
+    openTransactionModal.val = tr;
   });
 
   return card;

@@ -1,11 +1,11 @@
-import van, { type State } from "vanjs-core";
+import van from "vanjs-core";
 import { setupAdding } from "./adding.ts";
 import { openCategoryModal, setupCategoryModal } from "./category.ts";
-import { activeTab, convertTransaction, error, filteredTransactions, loading, loggedIn, logout, type Transaction } from './common.ts';
+import { activeTab, convertTransaction, error, filteredTransactions, loading, loggedIn, logout } from './common.ts';
 import { setupFilters } from "./filter.ts";
-import { setupGroup } from "./group.ts";
+import { GroupEls } from "./group.ts";
 import { Login } from "./login.ts";
-import { setupTransactionPopup } from "./popup.ts";
+import { TransactionPopup } from "./popup.ts";
 import { renderSharingSettings } from "./sharing.ts";
 import { setupStats } from "./stats.ts";
 import { openTagModal, setupTagModal } from "./tags.ts";
@@ -84,7 +84,7 @@ function MobileFilter() {
   );
 }
 
-function DesktopLayout(transactionModal: State<Transaction | null>) {
+function DesktopLayout() {
   return div({ class: 'desktop-layout' },
     aside({ class: 'sidebar' },
       div({ class: 'sidebar-header' },
@@ -148,8 +148,7 @@ function DesktopLayout(transactionModal: State<Transaction | null>) {
         }, 'Transactions'),
       ),
       div({ id: 'grouped-content', class: () => `main-tab-content${activeTab.val === 'grouped' ? ' active' : ''}` },
-        div({ class: 'grouped-options' },
-        ),
+        ...GroupEls(),
       ),
       div({ id: 'transactions-content', class: () => `main-tab-content${activeTab.val === 'transactions' ? ' active' : ''}` },
         div({ class: 'transactions-actions' },
@@ -184,7 +183,7 @@ function DesktopLayout(transactionModal: State<Transaction | null>) {
             if (error.val) {
               return div(error.val)
             }
-            return div(filteredTransactions.val.map(e => convertTransaction(e, transactionModal)))
+            return div(filteredTransactions.val.map(convertTransaction))
           }
         ),
       ),
@@ -214,27 +213,25 @@ function DesktopLayout(transactionModal: State<Transaction | null>) {
   );
 }
 
-function Page(openTransactionModal: State<Transaction | null>) {
+function Page() {
   return div({ class: 'page-container' },
     MobileFilter(),
-    DesktopLayout(openTransactionModal),
+    DesktopLayout(),
   );
 }
 
-function App(transactionModal: State<Transaction | null>) {
+function App() {
   if (loggedIn.val) {
-    return Page(transactionModal);
+    return Page();
   }
   return Login();
 }
 
 function mainInit() {
-  const [openTransactionModal, TransactionPopup] = setupTransactionPopup();
-  van.add(document.body, () => App(openTransactionModal), TransactionPopup, ...setupAdding())
+  van.add(document.body, App, TransactionPopup, ...setupAdding())
 
   queueMicrotask(() => {
     setupFilters();
-    setupGroup(openTransactionModal);
     setupTagModal();
     setupCategoryModal();
     setupSharingModal(); // Call the new setup function

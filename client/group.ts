@@ -1,4 +1,4 @@
-import van, { type State } from "vanjs-core";
+import van from "vanjs-core";
 import { convertTransaction, fetchTransactions, filteredTransactions, groupedOption, groupedOptions, type Transaction } from './common.ts';
 import { openTagModal } from "./tags.ts";
 
@@ -63,60 +63,52 @@ async function manageGroupTags(transactionIDs: number[], tag: string, action: 'a
   }
 }
 
-export function setupGroup(openTransactionModal: State<Transaction | null>) {
-  const groupedContent = document.getElementById("grouped-content");
-  if (groupedContent) {
-    const groupedOptionsEl = document.querySelector(".grouped-options");
-    if (groupedOptionsEl) {
-      van.add(groupedOptionsEl, Object.keys(groupedOptions).map(o => {
-        return div({
-          class: () => `option${groupedOption.val === o ? ' active' : ''}`,
-          onclick: () => { groupedOption.val = o as keyof typeof groupedOptions; }
-        }, o);
-      }))
-      van.add(groupedContent, div({ id: 'grouped-by-content' }, () => {
-        const grouped = groupTransactions(filteredTransactions.val, groupedOptions[groupedOption.val]);
-        const content = div();
-        for (const key in grouped) {
-          const transactions = grouped[key] || [];
-          const total = transactions.reduce((acc, tr) => acc + tr.amount, 0);
-          const commonTags = getCommonTags(transactions);
-          const transactionIDs = transactions.map(t => t.id);
-
-          van.add(content, details(
-            summary(
-              h3(`${key} - ${total.toFixed(2)}`),
-              div({ class: 'summary-tags' },
-                ...commonTags.map(tag =>
-                  span({ class: 'group-tag' },
-                    tag,
-                    span({
-                      class: 'remove-tag-btn',
-                      onclick: (e: Event) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (confirm(`Remove tag "${tag}" from all transactions in this group?`)) {
-                          manageGroupTags(transactionIDs, tag, 'remove');
-                        }
+export function GroupEls() {
+  return [
+    div({ class: 'grouped-options' }, Object.keys(groupedOptions).map(o => {
+      return div({
+        class: () => `option${groupedOption.val === o ? ' active' : ''}`,
+        onclick: () => { groupedOption.val = o as keyof typeof groupedOptions; }
+      }, o);
+    })),
+    div({ id: 'grouped-by-content' }, () => {
+      const grouped = groupTransactions(filteredTransactions.val, groupedOptions[groupedOption.val]);
+      return div(Object.entries(grouped).map(([key, transactions]) => {
+        const total = transactions.reduce((acc, tr) => acc + tr.amount, 0);
+        const commonTags = getCommonTags(transactions);
+        const transactionIDs = transactions.map(t => t.id);
+        return details(
+          summary(
+            h3(`${key} - ${total.toFixed(2)}`),
+            div({ class: 'summary-tags' },
+              ...commonTags.map(tag =>
+                span({ class: 'group-tag' },
+                  tag,
+                  span({
+                    class: 'remove-tag-btn',
+                    onclick: (e: Event) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (confirm(`Remove tag "${tag}" from all transactions in this group?`)) {
+                        manageGroupTags(transactionIDs, tag, 'remove');
                       }
-                    }, '×')
-                  )
-                ),
-                span({
-                  class: 'add-tag-btn',
-                  onclick: (e: Event) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openTagModal(transactionIDs, `Add Tag to ${key}`);
-                  }
-                }, '+ Tag')
-              )
-            ),
-            () => div(transactions.map((t) => convertTransaction(t, openTransactionModal)))
-          ));
-        }
-        return content;
+                    }
+                  }, '×')
+                )
+              ),
+              span({
+                class: 'add-tag-btn',
+                onclick: (e: Event) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openTagModal(transactionIDs, `Add Tag to ${key}`);
+                }
+              }, '+ Tag')
+            )
+          ),
+          () => div(transactions.map(convertTransaction))
+        )
       }));
-    }
-  }
+    })
+  ];
 }

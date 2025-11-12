@@ -1,5 +1,5 @@
 import van from "vanjs-core";
-import { categories, formatOccurredAt, type Transaction, transactions, token, fetchTransactions } from './common.ts';
+import { categories, fetchTransactions, formatOccurredAt, token, type Transaction, transactions } from './common.ts';
 
 const { div, span, strong, img, input, textarea, select, option, button, label } = van.tags;
 
@@ -315,12 +315,14 @@ function transactionPopup(tr: Transaction) {
             });
         }
 
-        const fileInput = input({ type: 'file', accept: 'image/*', style: 'display: none;', onchange: (e: Event) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-                uploadPhoto(file, tr.id).catch(err => alert(err.message));
+        const fileInput = input({
+            type: 'file', accept: 'image/*', style: 'display: none;', onchange: (e: Event) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) {
+                    uploadPhoto(file, tr.id).catch(err => alert(err.message));
+                }
             }
-        } });
+        });
         const addPhotoBtn = label({ class: 'add-photo-btn' },
             'Add Photo',
             fileInput
@@ -388,27 +390,23 @@ function transactionPopup(tr: Transaction) {
     }
 }
 
-export function setupTransactionPopup() {
-    const openTransactionModal = van.state<Transaction | null>(null);
-    return [
-        openTransactionModal,
-        () => {
-            const tr = openTransactionModal.val;
-            if (tr) {
-                queueMicrotask(() => transactionPopup(tr))
-                return div({ id: 'transaction-modal', class: 'modal', style: 'display: block;', onclick: () => openTransactionModal.val = null },
-                    div({ class: 'modal-content', onclick: (e: Event) => e.stopPropagation() },
-                        span({ class: 'close-button', onclick: () => openTransactionModal.val = null }, '×'),
-                        div({ id: 'modal-details' }),
-                        div({ id: 'modal-photos' }),
-                        div({ class: 'modal-footer' },
-                            button({ id: 'delete-transaction-btn', class: 'apply-btn', style: 'background-color: #f44336;' }, 'Delete'),
-                            button({ id: 'save-changes-btn', class: 'apply-btn' }, 'Зберегти зміни'),
-                        ),
-                    ),
-                );
-            }
-            return ''
-        }
-    ] as const
+export const openTransactionModal = van.state<Transaction | null>(null);
+
+export function TransactionPopup() {
+    const tr = openTransactionModal.val;
+    if (tr) {
+        queueMicrotask(() => transactionPopup(tr))
+        return div({ id: 'transaction-modal', class: 'modal', style: 'display: block;', onclick: () => openTransactionModal.val = null },
+            div({ class: 'modal-content', onclick: (e: Event) => e.stopPropagation() },
+                span({ class: 'close-button', onclick: () => openTransactionModal.val = null }, '×'),
+                div({ id: 'modal-details' }),
+                div({ id: 'modal-photos' }),
+                div({ class: 'modal-footer' },
+                    button({ id: 'delete-transaction-btn', class: 'apply-btn', style: 'background-color: #f44336;' }, 'Delete'),
+                    button({ id: 'save-changes-btn', class: 'apply-btn' }, 'Зберегти зміни'),
+                ),
+            ),
+        );
+    }
+    return ''
 }
