@@ -18,3 +18,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - filter in query param
 - filter on startup
 - tag filter
+- fix check existing transaction while importing
