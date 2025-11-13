@@ -113,7 +113,7 @@ van.derive(() => {
 	}, 50);
 });
 
-export type NewTransaction = Omit<Transaction, "id" | "photos">;
+export type NewTransaction = Omit<Transaction, "id" | "photos" | "personName">;
 
 export async function addTransactions(newTransactions: NewTransaction[]) {
 	if (!token.val) {

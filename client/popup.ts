@@ -79,7 +79,9 @@ async function deletePhoto(filePath: string) {
 function getAllTags() {
 	const tagSet = new Set<string>();
 	transactions.val.forEach((t) => {
-		t.tags.forEach((tag) => tagSet.add(tag));
+		t.tags.forEach((tag) => {
+			tagSet.add(tag);
+		});
 	});
 	return Array.from(tagSet).sort();
 }

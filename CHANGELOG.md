@@ -20,3 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - tag filter
 - fix check existing transaction while importing
 - correct update last used session
+- remove personName from adding transaction

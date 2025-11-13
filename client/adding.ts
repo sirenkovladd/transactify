@@ -409,7 +409,6 @@ function renderParsedTransactions(
 						category,
 						tags,
 						currency: "CAD",
-						personName: "",
 						card: cardValue,
 					});
 				});
@@ -559,7 +558,9 @@ export function setupAdding() {
 				id: "import-modal",
 				class: "modal",
 				style: "display: block;",
-				onclick: () => (openImportModal.val = false),
+				onclick: () => {
+					openImportModal.val = false;
+				},
 			},
 			div(
 				{
@@ -569,7 +570,9 @@ export function setupAdding() {
 				span(
 					{
 						class: "close-button",
-						onclick: () => (openImportModal.val = false),
+						onclick: () => {
+							openImportModal.val = false;
+						},
 					},
 					"×",
 				),
@@ -580,7 +583,9 @@ export function setupAdding() {
 							{
 								class: () => `tab${active.val === type ? " active" : ""}`,
 								"data-tab": type.toLowerCase(),
-								onclick: () => (active.val = type),
+								onclick: () => {
+									active.val = type;
+								},
 							},
 							type,
 						),
@@ -691,9 +696,6 @@ export function setupAdding() {
 						) as HTMLInputElement
 					).value,
 				),
-				personName: (
-					document.getElementById("new-transaction-person") as HTMLInputElement
-				).value,
 				card: (
 					document.getElementById("new-transaction-card") as HTMLInputElement
 				).value,
@@ -736,16 +738,20 @@ export function setupAdding() {
 					a(
 						{
 							id: "create-new-transaction-btn",
-							onclick: () =>
-								createNewTransactionModal &&
-								(createNewTransactionModal.style.display = "block"),
+							onclick: () => {
+								if (createNewTransactionModal) {
+									createNewTransactionModal.style.display = "block";
+								}
+							},
 						},
 						"New Transaction",
 					),
 					a(
 						{
 							id: "import-transaction",
-							onclick: () => (openImportModal.val = true),
+							onclick: () => {
+								openImportModal.val = true;
+							},
 						},
 						"Import...",
 					),
