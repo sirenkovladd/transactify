@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type HTTPError struct {
@@ -26,8 +25,7 @@ func GetUserId(db *sql.DB, r *http.Request) (int, *HTTPError) {
 	}
 
 	var userID int
-	var lastUsed time.Time
-	err := db.QueryRow("SELECT user_id, last_used FROM sessions WHERE session_code = $1", tokenString).Scan(&userID, &lastUsed)
+	err := db.QueryRow("UPDATE sessions SET last_used = now() WHERE session_code = $1 RETURNING user_id", tokenString).Scan(&userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("invalid session token")}
