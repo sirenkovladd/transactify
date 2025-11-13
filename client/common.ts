@@ -148,21 +148,13 @@ export async function addTransactions(newTransactions: NewTransaction[]) {
 }
 
 export const filteredTransactions = van.derive(() => {
-	const startDate = new Date(dateStartFilter.val);
-	const endDate = new Date(dateEndFilter.val);
-	endDate.setHours(
-		endDate.getHours() + 23,
-		endDate.getMinutes() + 59,
-		endDate.getSeconds() + 59,
-	);
+	const startDate = new Date(`${dateStartFilter.val}T00:00:00`);
+	const endDate = new Date(`${dateEndFilter.val}T23:59:59`);
 
-	console.log(startDate, endDate);
 	return transactions.val.filter((tr) => {
 		const occurredDate = new Date(tr.occurredAt);
 
 		const amount = Math.abs(tr.amount);
-
-		console.log(tr.merchant, occurredDate);
 
 		return (
 			amount >= delayedAmountFilter.val.min &&

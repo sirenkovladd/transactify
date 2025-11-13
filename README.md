@@ -29,8 +29,7 @@ This project is a web application for managing personal transactions. It allows 
 ### 1. Database Setup
 
 1.  Create a PostgreSQL database.
-2.  Run the `all.sql` file to create the necessary tables.
-3.  Set the following environment variables:
+2.  Set the following environment variables:
     *   `POSTGRES_USER`: Your PostgreSQL username.
     *   `POSTGRES_PASSWORD`: Your PostgreSQL password.
     *   `POSTGRES_DB`: The name of your PostgreSQL database.
@@ -59,12 +58,6 @@ This project is a web application for managing personal transactions. It allows 
 
 3.  **Serve the frontend:**
     The backend server also serves the frontend files from the `dist` directory.
-
-## Command-Line Tools
-
-The project includes the following command-line tools:
-
-*   `cli/createUser/main.go`: Creates a new user.
 
 ## Development Conventions
 
