@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add opening transaction in group page
 - show tags in edit form immediately
 - fix edit form to suggest update button
+- add option http or https
 
 ### Fixed
 

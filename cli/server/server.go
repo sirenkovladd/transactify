@@ -77,9 +77,6 @@ func main() {
 
 	router := route.NewWithDB(db)
 
-	certFile := os.Getenv("CERT_FILE")
-	keyFile := os.Getenv("KEY_FILE")
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -87,7 +84,18 @@ func main() {
 
 	log.Printf("listening on :%s...", port)
 
-	err = http.ListenAndServeTLS(fmt.Sprintf(":%s", port), certFile, keyFile, LoggerMiddleware(router.GetMux()))
+	protocol := os.Getenv("PROTOCOL")
+
+	switch protocol {
+	case "", "http":
+		err = http.ListenAndServe(fmt.Sprintf(":%s", port), LoggerMiddleware(router.GetMux()))
+	case "https":
+		certFile := os.Getenv("CERT_FILE")
+		keyFile := os.Getenv("KEY_FILE")
+		err = http.ListenAndServeTLS(fmt.Sprintf(":%s", port), certFile, keyFile, LoggerMiddleware(router.GetMux()))
+	default:
+		err = fmt.Errorf("unknown protocol: %s", protocol)
+	}
 	if err != nil {
 		panic(err)
 	}
