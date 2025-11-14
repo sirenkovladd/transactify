@@ -172,14 +172,18 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 			amountSign: string;
 			amount: string;
 			occurredAt: string;
-			spendMerchant: string;
+			spendMerchant?: string;
+			eTransferName?: string;
+			type: string;
 		};
 	}[];
 
 	return payload
-		.filter((e) => e.node.spendMerchant)
-		.map((item: any) => {
+		.map((item) => {
 			const node = item.node;
+			if (["CREDIT_CARD_PAYMENT", "DEPOSIT"].includes(node.type)) {
+				return null;
+			}
 			let amount = parseFloat(node.amount);
 			if (node.amountSign === "positive") {
 				amount = -amount;
@@ -193,7 +197,14 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 			const minutes = d.getMinutes().toString().padStart(2, "0");
 			const datetime = `${year}-${month}-${day}T${hours}:${minutes}`;
 
-			const merchant = node.spendMerchant;
+			const merchant =
+				node.spendMerchant ||
+				node.eTransferName ||
+				(node.type === "INTEREST" && "Interest");
+			node.type === "REIMBURSEMENT" && "Cashback";
+			if (!merchant) {
+				return null;
+			}
 			const category = getCategory(merchant);
 
 			return {
@@ -204,7 +215,8 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 				card: "wealthsimple",
 				tags: "",
 			} satisfies ParsedImportRow;
-		});
+		})
+		.filter((e) => !!e);
 }
 
 function buildExistingIndex(existing: NewTransaction[]): Set<string> {
