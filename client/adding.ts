@@ -200,8 +200,8 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 			const merchant =
 				node.spendMerchant ||
 				node.eTransferName ||
-				(node.type === "INTEREST" && "Interest");
-			node.type === "REIMBURSEMENT" && "Cashback";
+				(node.type === "INTEREST" && "Interest") ||
+				(node.type === "REIMBURSEMENT" && "Cashback");
 			if (!merchant) {
 				return null;
 			}
