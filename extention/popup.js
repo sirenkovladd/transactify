@@ -1,163 +1,351 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const fetchButton = document.getElementById('fetchButton');
-  const parseButton = document.getElementById('parseButton');
   const statusDiv = document.getElementById('status');
-  const dateRangeDiv = document.getElementById('dateRange');
-  const firstDateEl = document.getElementById('firstDate');
-  const lastDateEl = document.getElementById('lastDate');
+  const cardsListDiv = document.getElementById('cards-list');
+  const noCardsMessage = document.getElementById('no-cards-message');
+  const currentSiteSpan = document.getElementById('current-site');
+  const findCardsButton = document.getElementById('findCardsButton');
+  const fetchTransactionsButton = document.getElementById('fetchTransactionsButton');
 
-  parseButton.addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-      chrome.tabs.sendMessage(tab.id, { action: "parseTransactions" }, (response) => {
-        if (chrome.runtime.lastError) {
-          statusDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
-          return;
-        }
-        if (response.status === 'success') {
-          statusDiv.textContent = `Parsed ${response.count} transactions.`;
-        } else {
-          statusDiv.textContent = 'Failed to parse: ' + response.message;
-        }
+  let currentTab = null;
+  let currentSite = '';
+
+  /**
+   * ----- Storage Utility Functions -----
+   */
+
+  async function getStoredData() {
+    const result = await chrome.storage.local.get('cards');
+    return result.cards || [];
+  }
+
+  async function setStoredData(cards) {
+    return chrome.storage.local.set({ cards });
+  }
+
+
+  /**
+   * ----- UI Rendering Functions -----
+   */
+
+  function renderCard(card) {
+    const cardId = `card-${card.id.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const cardDiv = document.createElement('div');
+    cardDiv.id = cardId;
+    cardDiv.className = 'flex items-center justify-between bg-gray-200 dark:bg-gray-700 p-2 rounded-lg';
+
+    const label = document.createElement('label');
+    label.className = 'flex items-center space-x-2 cursor-pointer';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = card.enabled;
+    checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 bg-gray-300 border-gray-300 rounded focus:ring-blue-500';
+    checkbox.addEventListener('change', () => handleToggleCard(card.id, checkbox.checked));
+
+    const span = document.createElement('span');
+    span.textContent = card.name;
+
+    label.appendChild(checkbox);
+    label.appendChild(span);
+
+    const removeButton = document.createElement('button');
+    removeButton.className = 'text-red-500 hover:text-red-700';
+    removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+    removeButton.addEventListener('click', () => handleRemoveCard(card.id));
+
+    cardDiv.appendChild(label);
+    cardDiv.appendChild(removeButton);
+
+    return cardDiv;
+  }
+
+  async function loadAndRenderCards() {
+    const allCards = await getStoredData();
+    const siteCards = allCards.filter(c => c.site === currentSite);
+
+    cardsListDiv.innerHTML = '';
+    if (siteCards.length === 0) {
+      noCardsMessage.classList.remove('hidden');
+      fetchTransactionsButton.disabled = true;
+    } else {
+      noCardsMessage.classList.add('hidden');
+      const anyEnabled = siteCards.some(c => c.enabled);
+      fetchTransactionsButton.disabled = !anyEnabled;
+      siteCards.forEach(card => {
+        cardsListDiv.appendChild(renderCard(card));
       });
     }
-  });
+  }
 
 
   /**
-   * @typedef {Object} Transaction
-   * @property {string} amount
-   * @property {string} occurredAt
-   * @property {string} spendMerchant
-   * @property {string} subType
+   * ----- Event Handlers & Action Functions -----
    */
 
-  /**
-   * MOCK: Simulates fetching transactions from an API.
-   * In a real extension, this would make a network request.
-   * @param {string|undefined} cursor - The pagination cursor.
-   * @returns {Promise<{transactions: Transaction[], nextCursor: string|null}>}
-   */
-  async function getTransactions(cursor) {
-    console.log(`Fetching with cursor: ${cursor}`);
-    // This is mock data. Replace this with your actual API call.
-    const mockDatabase = {
-      'start': {
-        transactions: [
-          { "amount": "103.80", "occurredAt": "2025-10-05T20:24:28.000Z", "spendMerchant": "Nofrills Joti's #3403", "subType": "PURCHASE" },
-          { "amount": "12.50", "occurredAt": "2025-10-06T12:15:00.000Z", "spendMerchant": "Coffee Shop", "subType": "PURCHASE" }
-        ],
-        nextCursor: 'page2'
-      },
-      'page2': {
-        transactions: [
-          { "amount": "250.00", "occurredAt": "2025-10-08T08:00:45.000Z", "spendMerchant": "Online Store", "subType": "PURCHASE" },
-          { "amount": "78.99", "occurredAt": "2025-11-01T18:55:10.000Z", "spendMerchant": "Restaurant", "subType": "PURCHASE" }
-        ],
-        nextCursor: 'page3'
-      },
-      'page3': {
-        transactions: [
-          { "amount": "5.00", "occurredAt": "2025-11-02T09:30:00.000Z", "spendMerchant": "Vending Machine", "subType": "PURCHASE" }
-        ],
-        nextCursor: null // No more pages
+  async function handleToggleCard(cardId, isEnabled) {
+    const allCards = await getStoredData();
+    const cardIndex = allCards.findIndex(c => c.id === cardId);
+    if (cardIndex > -1) {
+      allCards[cardIndex].enabled = isEnabled;
+      await setStoredData(allCards);
+      await loadAndRenderCards(); // Re-render to update button state
+      showStatus(`Card ${isEnabled ? 'enabled' : 'disabled'}.`, 'success', 1500);
+    }
+  }
+
+  async function handleRemoveCard(cardId) {
+    let allCards = await getStoredData();
+    allCards = allCards.filter(c => c.id !== cardId);
+    await setStoredData(allCards);
+    await loadAndRenderCards();
+    showStatus('Card removed.', 'success');
+  }
+
+  function handleFindCards() {
+    if (!currentTab) return;
+    showStatus('Searching for cards on this page...', 'info', null);
+    chrome.tabs.sendMessage(currentTab.id, { action: 'findCards' }, (response) => {
+      if (chrome.runtime.lastError) {
+        showStatus('Could not connect to the page. Try reloading it.', 'error');
+        console.error(chrome.runtime.lastError.message);
+      } else if (response && response.status === 'error') {
+        showStatus(response.message, 'error');
+      } else if (!response || response.status !== 'success') {
+        showStatus('No response from page. Is it a supported site?', 'error');
       }
-    };
-
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve(mockDatabase[cursor || 'start']);
-      }, 500); // Simulate network delay
     });
   }
 
+  function showStatus(message, type = 'info', duration = 3000) {
+    statusDiv.textContent = message;
+    statusDiv.className = 'text-sm h-10 flex items-center justify-center '; // Reset classes
+    switch (type) {
+      case 'success': statusDiv.classList.add('text-green-500'); break;
+      case 'error': statusDiv.classList.add('text-red-500'); break;
+      case 'warn': statusDiv.classList.add('text-yellow-500'); break;
+      default: statusDiv.classList.add('text-gray-500', 'dark:text-gray-400'); break;
+    }
+    if (duration) {
+      setTimeout(() => {
+        if (statusDiv.textContent === message) {
+          statusDiv.textContent = '';
+        }
+      }, duration);
+    }
+  }
+
+
   /**
-   * Fetches all transactions by handling pagination.
-   * @returns {Promise<Transaction[]>}
+   * ----- Message Listener -----
    */
-  async function fetchAllTransactions() {
-    let allTransactions = [];
-    let cursor = undefined;
-    let hasMore = true;
 
-    statusDiv.textContent = 'Fetching transactions...';
+  chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    if (request.action === 'cardsFound') {
+      const newCards = request.cards || [];
+      if (newCards.length === 0) {
+        showStatus('No new cards were found on the page.', 'warn');
+        return;
+      }
 
-    while (hasMore) {
-      const result = await getTransactions(cursor);
-      if (result && result.transactions) {
-        allTransactions.push(...result.transactions);
-        cursor = result.nextCursor;
-        hasMore = !!cursor;
-        statusDiv.textContent = `Fetched ${allTransactions.length} transactions...`;
+      const existingCards = await getStoredData();
+      let addedCount = 0;
+
+      newCards.forEach(newCard => {
+        if (!existingCards.some(c => c.id === newCard.id)) {
+          existingCards.push({ ...newCard, enabled: true });
+          addedCount++;
+        }
+      });
+
+      if (addedCount > 0) {
+        await setStoredData(existingCards);
+        showStatus(`Successfully added ${addedCount} new card(s)!`, 'success');
+        await loadAndRenderCards();
       } else {
-        hasMore = false;
+        showStatus('All found cards are already in your list.', 'info');
       }
     }
+  });
+
+  /**
+   * ----- Transaction Fetching Logic -----
+   */
+
+  async function fetchWealthsimpleTransactions(card, auth, cursor = null, allTransactions = []) {
+    showStatus(`Fetching from ${card.name}... (${allTransactions.length} found)`);
+    const response = await fetch("https://my.wealthsimple.com/graphql", {
+      method: "POST",
+      headers: auth.headers,
+      body: JSON.stringify({
+        operationName: "FetchActivityFeedItems",
+        variables: {
+          orderBy: "OCCURRED_AT_DESC",
+          first: 50,
+          cursor: cursor,
+          condition: {
+            endDate: new Date().toISOString(),
+            accountIds: [card.id]
+          }
+        },
+        query: `query FetchActivityFeedItems($first: Int, $cursor: Cursor, $condition: ActivityCondition, $orderBy: [ActivitiesOrderBy!] = OCCURRED_AT_DESC) {
+          activityFeedItems(first: $first, after: $cursor, condition: $condition, orderBy: $orderBy) {
+            edges { node { amount amountSign currency occurredAt spendMerchant } }
+            pageInfo { hasNextPage endCursor }
+          }
+        }`
+      })
+    });
+
+    if (!response.ok) throw new Error(`Wealthsimple API error: ${response.statusText}`);
+    const { data } = await response.json();
+    const { edges, pageInfo } = data.activityFeedItems;
+    const transactions = edges.map(e => e.node);
+    allTransactions.push(...transactions);
+
+    // if (pageInfo.hasNextPage) {
+    //   return fetchWealthsimpleTransactions(card, auth, pageInfo.endCursor, allTransactions);
+    // }
     return allTransactions;
   }
 
-  /**
-   * Sends the transaction data to your external server.
-   * @param {Transaction[]} transactions
-   */
   async function sendToServer(transactions) {
-    // IMPORTANT: Replace this with your actual server URL
-    const serverUrl = 'https://your-external-server.com/api/transactions';
-    statusDiv.textContent = 'Sending data to server...';
+    const serverUrl = 'https://transaction.sirenko.ca/?add=extension';
+    showStatus(`Opening web app to import ${transactions.length} transactions...`, 'info', null);
 
     try {
-      const response = await fetch(serverUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ transactions }),
+      const tab = await chrome.tabs.create({ url: serverUrl, active: true });
+
+      // Wait for the tab to finish loading
+      chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+        if (tabId === tab.id && info.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener);
+
+          // Send data to the new tab
+          // We need to wait a bit for the app to initialize its event listeners
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'importTransactions',
+              transactions: transactions
+            }, (response) => {
+              if (chrome.runtime.lastError) {
+                // If sendMessage fails (e.g. content script not ready), try executing script
+                // This is a fallback if the content script isn't listening yet or if we want to bypass it
+                // However, for a web app, we should probably use window.postMessage via executeScript
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  func: (data) => {
+                    window.postMessage({ type: 'EXTENSION_IMPORT_TRANSACTIONS', data }, '*');
+                  },
+                  args: [transactions]
+                });
+              } else {
+                console.log("Message sent to tab");
+              }
+            });
+
+            // Also try direct postMessage injection to be sure, as sendMessage might depend on content script
+            chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: (data) => {
+                window.postMessage({ type: 'EXTENSION_IMPORT_TRANSACTIONS', data }, '*');
+              },
+              args: [transactions]
+            });
+
+          }, 2000); // Wait 2 seconds for app to hydrate
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
+      showStatus('Transactions sent to web app!', 'success');
+    } catch (error) {
+      console.error('Failed to open web app:', error);
+      showStatus(`Error: ${error.message}`, 'error');
+    }
+  }
+
+  async function handleFetchTransactions() {
+    fetchTransactionsButton.disabled = true;
+    findCardsButton.disabled = true;
+
+    try {
+      const allCards = await getStoredData();
+      const selectedCards = allCards.filter(c => c.site === currentSite && c.enabled);
+      if (selectedCards.length === 0) {
+        showStatus('No cards selected.', 'warn');
+        return;
       }
 
-      statusDiv.textContent = 'Successfully sent data!';
-      console.log('Server response:', await response.json());
+      showStatus('Requesting authentication from page...', 'info', null);
+      const authResponse = await chrome.tabs.sendMessage(currentTab.id, { action: 'getAuthDetails', site: currentSite });
+
+      if (!authResponse || authResponse.status !== 'success') {
+        throw new Error(authResponse.message || 'Failed to get authentication from page.');
+      }
+
+      let allFetchedTransactions = [];
+      for (const card of selectedCards) {
+        let transactions = [];
+        if (card.site.includes('wealthsimple.com')) {
+          transactions = await fetchWealthsimpleTransactions(card, authResponse.auth);
+        } else if (card.site.includes('cibc.com')) {
+          showStatus(`Fetching for CIBC's ${card.name} is not implemented yet.`, 'warn');
+          // transactions = await fetchCibcTransactions(card, authResponse.auth);
+        }
+
+        const formatted = transactions.map(t => ({
+          occurredAt: t.occurredAt,
+          merchant: t.spendMerchant,
+          amount: parseFloat(t.amount) * (t.amountSign === 'DEBIT' ? -1 : 1),
+          currency: t.currency,
+          card: card.name,
+          tags: [],
+        }));
+        allFetchedTransactions.push(...formatted);
+      }
+
+      if (allFetchedTransactions.length > 0) {
+        await sendToServer(allFetchedTransactions);
+      } else {
+        showStatus('No new transactions found to send.', 'info');
+      }
 
     } catch (error) {
-      statusDiv.textContent = 'Error sending data. See console.';
-      console.error('Failed to send transactions to server:', error);
+      console.error('Error during fetch process:', error);
+      showStatus(error.message, 'error');
+    } finally {
+      fetchTransactionsButton.disabled = false;
+      findCardsButton.disabled = false;
     }
   }
 
 
-  fetchButton.addEventListener('click', async () => {
-    fetchButton.disabled = true;
-    fetchButton.textContent = 'Processing...';
-    dateRangeDiv.classList.add('hidden');
+  /**
+   * ----- Initialization -----
+   */
 
-    try {
-      const transactions = await fetchAllTransactions();
+  async function init() {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    currentTab = tabs[0];
 
-      if (transactions.length > 0) {
-        // Find first and last dates
-        const dates = transactions.map(t => new Date(t.occurredAt));
-        const firstDate = new Date(Math.min(...dates));
-        const lastDate = new Date(Math.max(...dates));
-
-        // Display dates
-        firstDateEl.textContent = `First: ${firstDate.toDateString()}`;
-        lastDateEl.textContent = `Last:  ${lastDate.toDateString()}`;
-        dateRangeDiv.classList.remove('hidden');
-
-        await sendToServer(transactions);
-      } else {
-        statusDiv.textContent = 'No transactions found.';
+    if (currentTab && currentTab.url) {
+      try {
+        const url = new URL(currentTab.url);
+        currentSite = url.hostname.replace(/^www\./, '');
+        currentSiteSpan.textContent = currentSite;
+      } catch (e) {
+        currentSite = 'unsupported page';
+        currentSiteSpan.textContent = 'unsupported page';
+        findCardsButton.disabled = true;
+        fetchTransactionsButton.disabled = true;
+        showStatus('Cannot run on this type of page.', 'warn');
+        return;
       }
-
-    } catch (error) {
-      statusDiv.textContent = 'An error occurred. Check console.';
-      console.error('Error during fetch and send process:', error);
-    } finally {
-      fetchButton.disabled = false;
-      fetchButton.textContent = 'Fetch & Send Transactions';
     }
-  });
+
+    await loadAndRenderCards();
+    findCardsButton.addEventListener('click', handleFindCards);
+    fetchTransactionsButton.addEventListener('click', handleFetchTransactions);
+  }
+
+  init();
 });

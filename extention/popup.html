@@ -6,30 +6,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transaction Fetcher</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     body {
-      width: 300px;
+      width: 400px;
     }
   </style>
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 font-sans">
-  <div class="flex flex-col items-center space-y-4">
-    <h1 class="text-xl font-bold">Transaction Exporter</h1>
-    <button id="parseButton"
-      class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300">
-      Parse On-Page Transactions
-    </button>
-    <button id="fetchButton"
-      class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300">
-      Fetch & Send Transactions
-    </button>
-    <div id="status" class="text-sm text-gray-500 dark:text-gray-400 h-10"></div>
-    <div id="dateRange" class="text-center p-2 bg-gray-200 dark:bg-gray-700 rounded-lg w-full hidden">
-      <p class="font-semibold">Transaction Period:</p>
-      <p id="firstDate"></p>
-      <p id="lastDate"></p>
+  <div class="space-y-4">
+    <h1 class="text-xl font-bold text-center">Transaction Exporter</h1>
+
+    <div id="cards-section">
+      <h2 class="text-lg font-semibold">Your Cards for <span id="current-site" class="font-bold">this site</span></h2>
+      <div id="cards-list" class="space-y-2 mt-2">
+        <!-- Card items will be dynamically inserted here -->
+      </div>
+      <p id="no-cards-message" class="text-gray-500 dark:text-gray-400 mt-2 hidden">No cards found. Click "Find
+        Cards" to add some.</p>
     </div>
+
+    <div class="flex space-x-2">
+      <button id="findCardsButton"
+        class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300">
+        <i class="fas fa-search mr-2"></i>Find Cards
+      </button>
+      <button id="fetchTransactionsButton"
+        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300">
+        <i class="fas fa-download mr-2"></i>Fetch Transactions
+      </button>
+    </div>
+
+    <div id="status" class="text-sm text-gray-500 dark:text-gray-400 h-10 flex items-center justify-center"></div>
   </div>
   <script src="popup.js"></script>
 </body>

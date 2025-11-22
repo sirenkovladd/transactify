@@ -6,13 +6,14 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "tabs"
+    "tabs",
+    "storage"
   ],
   "action": {
     "default_popup": "popup.html"
   },
   "host_permissions": [
-    "https://your-external-server.com/*",
+    "https://https://transaction.sirenko.ca/*",
     "https://www.cibconline.cibc.com/*",
     "https://*.wealthsimple.com/*"
   ],

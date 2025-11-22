@@ -518,6 +518,28 @@ function renderParsedTransactions(
 
 export function setupAdding() {
 	const openImportModal = van.state(false);
+	const externalImportData = van.state<ParsedImportRow[] | null>(null);
+
+	const urlParams = new URLSearchParams(window.location.search);
+	if (urlParams.get("add") === "extension") {
+		window.addEventListener("message", (event) => {
+			if (event.data && event.data.type === "EXTENSION_IMPORT_TRANSACTIONS") {
+				const rawTransactions = event.data.data;
+				if (Array.isArray(rawTransactions)) {
+					const parsed: ParsedImportRow[] = rawTransactions.map((t: any) => ({
+						datetime: t.occurredAt,
+						merchant: t.merchant,
+						amount: t.amount,
+						category: "unknown",
+						card: t.card,
+						tags: (t.tags || []).join(", "),
+					}));
+					externalImportData.val = parsed;
+					openImportModal.val = true;
+				}
+			}
+		});
+	}
 
 	const ImportModalComponent = () => {
 		if (!openImportModal.val) return "";
@@ -533,6 +555,19 @@ export function setupAdding() {
 		const parsedTransactionsContainer = div({
 			id: "parsed-transactions-container",
 		});
+
+		if (externalImportData.val) {
+			const existing = transactions?.val || [];
+			van.add(
+				parsedTransactionsContainer,
+				renderParsedTransactions(
+					externalImportData.val,
+					undefined,
+					openImportModal,
+					existing,
+				),
+			);
+		}
 
 		const wealthsimpleInput = textarea({
 			id: "wealthsimple-input",
@@ -572,6 +607,7 @@ export function setupAdding() {
 				style: "display: block;",
 				onclick: () => {
 					openImportModal.val = false;
+					externalImportData.val = null;
 				},
 			},
 			div(
@@ -584,6 +620,7 @@ export function setupAdding() {
 						class: "close-button",
 						onclick: () => {
 							openImportModal.val = false;
+							externalImportData.val = null;
 						},
 					},
 					"×",
