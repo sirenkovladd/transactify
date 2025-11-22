@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         query: `query FetchActivityFeedItems($first: Int, $cursor: Cursor, $condition: ActivityCondition, $orderBy: [ActivitiesOrderBy!] = OCCURRED_AT_DESC) {
           activityFeedItems(first: $first, after: $cursor, condition: $condition, orderBy: $orderBy) {
-            edges { node { amount amountSign currency occurredAt spendMerchant } }
+            edges { node { amount amountSign currency occurredAt spendMerchant type eTransferName } }
             pageInfo { hasNextPage endCursor }
           }
         }`
@@ -199,8 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!response.ok) throw new Error(`Wealthsimple API error: ${response.statusText}`);
     const { data } = await response.json();
     const { edges, pageInfo } = data.activityFeedItems;
-    const transactions = edges.map(e => e.node);
-    allTransactions.push(...transactions);
+    allTransactions.push(...edges);
 
     // if (pageInfo.hasNextPage) {
     //   return fetchWealthsimpleTransactions(card, auth, pageInfo.endCursor, allTransactions);
@@ -209,56 +208,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function sendToServer(transactions) {
-    const serverUrl = 'https://transaction.sirenko.ca/?add=extension';
     showStatus(`Opening web app to import ${transactions.length} transactions...`, 'info', null);
 
     try {
-      const tab = await chrome.tabs.create({ url: serverUrl, active: true });
-
-      // Wait for the tab to finish loading
-      chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-        if (tabId === tab.id && info.status === 'complete') {
-          chrome.tabs.onUpdated.removeListener(listener);
-
-          // Send data to the new tab
-          // We need to wait a bit for the app to initialize its event listeners
-          setTimeout(() => {
-            chrome.tabs.sendMessage(tab.id, {
-              action: 'importTransactions',
-              transactions: transactions
-            }, (response) => {
-              if (chrome.runtime.lastError) {
-                // If sendMessage fails (e.g. content script not ready), try executing script
-                // This is a fallback if the content script isn't listening yet or if we want to bypass it
-                // However, for a web app, we should probably use window.postMessage via executeScript
-                chrome.scripting.executeScript({
-                  target: { tabId: tab.id },
-                  func: (data) => {
-                    window.postMessage({ type: 'EXTENSION_IMPORT_TRANSACTIONS', data }, '*');
-                  },
-                  args: [transactions]
-                });
-              } else {
-                console.log("Message sent to tab");
-              }
-            });
-
-            // Also try direct postMessage injection to be sure, as sendMessage might depend on content script
-            chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              func: (data) => {
-                window.postMessage({ type: 'EXTENSION_IMPORT_TRANSACTIONS', data }, '*');
-              },
-              args: [transactions]
-            });
-
-          }, 2000); // Wait 2 seconds for app to hydrate
-        }
+      // Send message to background script to handle the tab creation and data transfer
+      // This ensures the process continues even if the popup closes
+      await chrome.runtime.sendMessage({
+        action: 'openImportPage',
+        transactions: transactions
       });
 
       showStatus('Transactions sent to web app!', 'success');
+
+      // Optional: Close the popup after a short delay since the background script is handling it
+      setTimeout(() => {
+        window.close();
+      }, 1000);
+
     } catch (error) {
-      console.error('Failed to open web app:', error);
+      console.error('Failed to send message to background script:', error);
       showStatus(`Error: ${error.message}`, 'error');
     }
   }

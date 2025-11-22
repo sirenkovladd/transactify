@@ -12,8 +12,11 @@
   "action": {
     "default_popup": "popup.html"
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
-    "https://https://transaction.sirenko.ca/*",
+    "https://transaction.sirenko.ca/*",
     "https://www.cibconline.cibc.com/*",
     "https://*.wealthsimple.com/*"
   ],

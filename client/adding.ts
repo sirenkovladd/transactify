@@ -558,10 +558,12 @@ export function setupAdding() {
 
 		if (externalImportData.val) {
 			const existing = transactions?.val || [];
+			const rawWealthsimple = JSON.stringify(externalImportData.val);
+			const transactionsParsed = parseWealthsimple(rawWealthsimple);
 			van.add(
 				parsedTransactionsContainer,
 				renderParsedTransactions(
-					externalImportData.val,
+					transactionsParsed,
 					undefined,
 					openImportModal,
 					existing,
