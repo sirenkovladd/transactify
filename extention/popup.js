@@ -259,16 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus(`Fetching for CIBC's ${card.name} is not implemented yet.`, 'warn');
           // transactions = await fetchCibcTransactions(card, authResponse.auth);
         }
-
-        const formatted = transactions.map(t => ({
-          occurredAt: t.occurredAt,
-          merchant: t.spendMerchant,
-          amount: parseFloat(t.amount) * (t.amountSign === 'DEBIT' ? -1 : 1),
-          currency: t.currency,
-          card: card.name,
-          tags: [],
-        }));
-        allFetchedTransactions.push(...formatted);
+        allFetchedTransactions.push(...transactions);
       }
 
       if (allFetchedTransactions.length > 0) {

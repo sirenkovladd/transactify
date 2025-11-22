@@ -526,15 +526,7 @@ export function setupAdding() {
 			if (event.data && event.data.type === "EXTENSION_IMPORT_TRANSACTIONS") {
 				const rawTransactions = event.data.data;
 				if (Array.isArray(rawTransactions)) {
-					const parsed: ParsedImportRow[] = rawTransactions.map((t: any) => ({
-						datetime: t.occurredAt,
-						merchant: t.merchant,
-						amount: t.amount,
-						category: "unknown",
-						card: t.card,
-						tags: (t.tags || []).join(", "),
-					}));
-					externalImportData.val = parsed;
+					externalImportData.val = rawTransactions;
 					openImportModal.val = true;
 				}
 			}
