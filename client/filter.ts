@@ -34,9 +34,12 @@ export function MultiSelect(
 		tagsContainer.innerHTML = "";
 		van.add(
 			tagsContainer,
-			...selectedState.val.map((value) =>
-				span(
-					{ class: "multi-select-tag" },
+			...selectedState.val.map((value) => {
+				const isCustom = !optionsState.val.includes(value);
+				return span(
+					{
+						class: `multi-select-tag${isCustom ? " multi-select-tag-custom" : ""}`,
+					},
 					value,
 					span(
 						{
@@ -49,9 +52,16 @@ export function MultiSelect(
 						},
 						"×",
 					),
-				),
-			),
+				);
+			}),
 		);
+	};
+
+	const handleInputConfirm = (value: string) => {
+		if (value && !selectedState.val.includes(value)) {
+			selectedState.val = [...selectedState.val, value];
+			searchInput.value = "";
+		}
 	};
 
 	const renderOptions = (filter = "") => {
@@ -70,9 +80,7 @@ export function MultiSelect(
 					{
 						class: "multi-select-option",
 						onclick: () => {
-							selectedState.val = [...selectedState.val, opt];
-							searchInput.value = "";
-							renderOptions();
+							handleInputConfirm(opt);
 						},
 					},
 					opt,
@@ -83,6 +91,15 @@ export function MultiSelect(
 
 	searchInput.addEventListener("input", () => renderOptions(searchInput.value));
 	searchInput.addEventListener("focus", () => renderOptions());
+
+	searchInput.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			handleInputConfirm(searchInput.value);
+		}
+	});
+
+	// searchInput.addEventListener("input", () => renderOptions(searchInput.value)); - Removed, as van.derive handles it.
 
 	van.derive(() => {
 		renderTags();

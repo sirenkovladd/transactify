@@ -163,7 +163,9 @@ export const filteredTransactions = van.derive(() => {
 			occurredDate >= startDate &&
 			occurredDate <= endDate &&
 			(merchantFilter.val.length === 0 ||
-				merchantFilter.val.includes(tr.merchant)) &&
+				merchantFilter.val.some((merchant) =>
+					tr.merchant.toLowerCase().includes(merchant.toLowerCase()),
+				)) &&
 			(cardFilter.val.length === 0 || cardFilter.val.includes(tr.card)) &&
 			(personFilter.val.length === 0 ||
 				personFilter.val.includes(tr.personName)) &&
