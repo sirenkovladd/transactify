@@ -13,12 +13,13 @@ declare const DateRangePicker: any;
 const { div, span, input } = van.tags;
 
 export function MultiSelect(
+	label: string,
 	optionsState: State<string[]>,
 	selectedState: State<string[]>,
 ) {
 	const searchInput = input({
 		class: "multi-select-input",
-		placeholder: "Search...",
+		placeholder: label,
 	});
 	const dropdown = div({ class: "multi-select-dropdown" });
 	const tagsContainer = div();

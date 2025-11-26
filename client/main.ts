@@ -12,7 +12,6 @@ import {
 	filteredTransactions,
 	loading,
 	loggedIn,
-	logout,
 	merchantFilter,
 	merchants,
 	personFilter,
@@ -25,11 +24,10 @@ import { GroupEls } from "./group.ts";
 import { Login } from "./login.ts";
 import { TransactionPopup } from "./popup.ts";
 import { renderSharingSettings } from "./sharing.ts";
-import { setupStats } from "./stats.ts";
+import { StatsSidebar } from "./stats.ts";
 import { openTagModal, setupTagModal } from "./tags.ts";
 
-const { div, span, aside, input, h2, label, button, main, h3, canvas } =
-	van.tags;
+const { div, span, aside, input, h2, label, button, main } = van.tags;
 
 function setupSharingModal() {
 	const sharingModal = document.getElementById("sharing-modal") as HTMLElement;
@@ -107,29 +105,18 @@ function MobileFilter() {
 		),
 		div(
 			{ class: "filter-group" },
-			label({ for: "merchant-mobile" }, "Мерчант:"),
-			MultiSelect(merchants, merchantFilter),
+			MultiSelect("Merchant", merchants, merchantFilter),
+		),
+		div({ class: "filter-group" }, MultiSelect("Card", cards, cardFilter)),
+		div(
+			{ class: "filter-group" },
+			MultiSelect("Person", persons, personFilter),
 		),
 		div(
 			{ class: "filter-group" },
-			label({ for: "card-mobile" }, "Картка:"),
-			MultiSelect(cards, cardFilter),
+			MultiSelect("Category", categoriesFromTransaction, categoryFilter),
 		),
-		div(
-			{ class: "filter-group" },
-			label({ for: "person-mobile" }, "Ім'я:"),
-			MultiSelect(persons, personFilter),
-		),
-		div(
-			{ class: "filter-group" },
-			label({ for: "category-mobile" }, "Категорія:"),
-			MultiSelect(categoriesFromTransaction, categoryFilter),
-		),
-		div(
-			{ class: "filter-group" },
-			label({ for: "tag-mobile" }, "Тег:"),
-			MultiSelect(tags, tagFilter),
-		),
+		div({ class: "filter-group" }, MultiSelect("Tag", tags, tagFilter)),
 	);
 }
 
@@ -181,29 +168,18 @@ function DesktopLayout() {
 			),
 			div(
 				{ class: "filter-group" },
-				label({ for: "merchant" }, "Мерчант:"),
-				MultiSelect(merchants, merchantFilter),
+				MultiSelect("Merchant", merchants, merchantFilter),
+			),
+			div({ class: "filter-group" }, MultiSelect("Card", cards, cardFilter)),
+			div(
+				{ class: "filter-group" },
+				MultiSelect("Person", persons, personFilter),
 			),
 			div(
 				{ class: "filter-group" },
-				label({ for: "card" }, "Картка:"),
-				MultiSelect(cards, cardFilter),
+				MultiSelect("Category", categoriesFromTransaction, categoryFilter),
 			),
-			div(
-				{ class: "filter-group" },
-				label({ for: "person" }, "Ім'я:"),
-				MultiSelect(persons, personFilter),
-			),
-			div(
-				{ class: "filter-group" },
-				label({ for: "category" }, "Категорія:"),
-				MultiSelect(categoriesFromTransaction, categoryFilter),
-			),
-			div(
-				{ class: "filter-group" },
-				label({ for: "tag" }, "Тег:"),
-				MultiSelect(tags, tagFilter),
-			),
+			div({ class: "filter-group" }, MultiSelect("Tag", tags, tagFilter)),
 			button({ class: "apply-btn desktop-btn" }, "Застосувати фільтри"),
 		),
 		main(
@@ -287,27 +263,7 @@ function DesktopLayout() {
 				}),
 			),
 		),
-		aside(
-			{ class: "stats-sidebar" },
-			h3("Summary"),
-			div({ id: "summary-content" }),
-			h3("Last 30 days"),
-			div({ class: "pie-chart-container" }, canvas({ id: "last-month-chart" })),
-			h3("By Category"),
-			div({ class: "pie-chart-container" }, canvas({ id: "category-chart" })),
-			h3("By Tags"),
-			div({ class: "pie-chart-container" }, canvas({ id: "tags-chart" })),
-			h3("By Person"),
-			div({ class: "pie-chart-container" }, canvas({ id: "person-chart" })),
-			button(
-				{
-					class: "apply-btn",
-					style: "display: block; margin-top: 20px;",
-					onclick: () => logout(),
-				},
-				"Logout",
-			),
-		),
+		StatsSidebar(),
 	);
 }
 
@@ -330,7 +286,6 @@ function mainInit() {
 		setupTagModal();
 		setupCategoryModal();
 		setupSharingModal(); // Call the new setup function
-		setupStats();
 	});
 }
 

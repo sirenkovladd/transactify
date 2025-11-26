@@ -1,46 +1,27 @@
 import van from "vanjs-core";
-import { filteredTransactions } from "./common.ts";
+import { filteredTransactions, logout } from "./common.ts";
 
 declare const Chart: any;
 
-const { div, span } = van.tags;
+const { div, span, h3, canvas, aside, button } = van.tags;
 
-export function setupStats() {
-	const summaryContent = document.getElementById("summary-content");
-	const categoryChartCanvas = document.getElementById(
-		"category-chart",
-	) as HTMLCanvasElement;
-	const tagsChartCanvas = document.getElementById(
-		"tags-chart",
-	) as HTMLCanvasElement;
-	const personChartCanvas = document.getElementById(
-		"person-chart",
-	) as HTMLCanvasElement;
-	const lastMonthChartCanvas = document.getElementById(
-		"last-month-chart",
-	) as HTMLCanvasElement;
-
-	if (
-		!summaryContent ||
-		!categoryChartCanvas ||
-		!tagsChartCanvas ||
-		!personChartCanvas ||
-		!lastMonthChartCanvas
-	) {
-		return;
-	}
-
+export function StatsSidebar() {
 	let categoryChart: any;
 	let tagsChart: any;
 	let personChart: any;
 	let lastMonthChart: any;
 
+	const categoryCanvas = canvas();
+	const tagsCanvas = canvas();
+	const personCanvas = canvas();
+	const lastMonthCanvas = canvas();
+
 	const createPieChart = (
-		canvas: HTMLCanvasElement,
+		canvasEl: HTMLCanvasElement,
 		data: any,
 		label: string,
 	) => {
-		const ctx = canvas.getContext("2d");
+		const ctx = canvasEl.getContext("2d");
 		if (!ctx) return;
 		return new Chart(ctx, {
 			type: "pie",
@@ -82,12 +63,12 @@ export function setupStats() {
 	};
 
 	const createBarChart = (
-		canvas: HTMLCanvasElement,
+		canvasEl: HTMLCanvasElement,
 		labels: string[],
 		data: number[],
 		label: string,
 	) => {
-		const ctx = canvas.getContext("2d");
+		const ctx = canvasEl.getContext("2d");
 		if (!ctx) return;
 		return new Chart(ctx, {
 			type: "bar",
@@ -136,34 +117,9 @@ export function setupStats() {
 		chart.update();
 	};
 
+	// Reactively update charts and calculate summary
 	van.derive(() => {
 		const transactions = filteredTransactions.val;
-
-		// Summary
-		const totalTransactions = transactions.length;
-		const totalAmount = transactions.reduce((sum, tr) => sum + tr.amount, 0);
-		const averageAmount =
-			totalTransactions > 0 ? totalAmount / totalTransactions : 0;
-
-		summaryContent.innerHTML = "";
-		van.add(
-			summaryContent,
-			div(
-				{ class: "summary-item" },
-				span({ class: "label" }, "Total Transactions:"),
-				span({ class: "value" }, totalTransactions),
-			),
-			div(
-				{ class: "summary-item" },
-				span({ class: "label" }, "Total Amount:"),
-				span({ class: "value" }, `${totalAmount.toFixed(2)}`),
-			),
-			div(
-				{ class: "summary-item" },
-				span({ class: "label" }, "Average Amount:"),
-				span({ class: "value" }, `${averageAmount.toFixed(2)}`),
-			),
-		);
 
 		// Category data
 		const categoryData = transactions.reduce(
@@ -198,9 +154,10 @@ export function setupStats() {
 			{} as Record<string, number>,
 		);
 
+		// Update or Create Charts
 		if (!categoryChart) {
 			categoryChart = createPieChart(
-				categoryChartCanvas,
+				categoryCanvas,
 				categoryData,
 				"By Category",
 			);
@@ -209,13 +166,13 @@ export function setupStats() {
 		}
 
 		if (!tagsChart) {
-			tagsChart = createPieChart(tagsChartCanvas, tagsData, "By Tags");
+			tagsChart = createPieChart(tagsCanvas, tagsData, "By Tags");
 		} else {
 			updateChart(tagsChart, tagsData);
 		}
 
 		if (!personChart) {
-			personChart = createPieChart(personChartCanvas, personData, "By Person");
+			personChart = createPieChart(personCanvas, personData, "By Person");
 		} else {
 			updateChart(personChart, personData);
 		}
@@ -227,11 +184,10 @@ export function setupStats() {
 		thirtyDaysAgo.setDate(today.getDate() - 30);
 		thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-		// Initialize map for the last 31 days
 		for (let i = 0; i < 31; i++) {
 			const date = new Date(thirtyDaysAgo);
 			date.setDate(date.getDate() + i);
-			const dayKey = date.toISOString().split("T")[0] as string; // YYYY-MM-DD
+			const dayKey = date.toISOString().split("T")[0] as string;
 			dailyDataMap.set(dayKey, 0);
 		}
 
@@ -268,7 +224,7 @@ export function setupStats() {
 
 		if (!lastMonthChart) {
 			lastMonthChart = createBarChart(
-				lastMonthChartCanvas,
+				lastMonthCanvas,
 				labels,
 				dataValues,
 				"Amount",
@@ -277,4 +233,76 @@ export function setupStats() {
 			updateBarChart(lastMonthChart, labels, dataValues);
 		}
 	});
+
+	const summary = van.derive(() => {
+		const transactions = filteredTransactions.val;
+		const totalTransactions = transactions.length;
+		const totalAmount = transactions.reduce((sum, tr) => sum + tr.amount, 0);
+		const averageAmount =
+			totalTransactions > 0 ? totalAmount / totalTransactions : 0;
+		return { totalTransactions, totalAmount, averageAmount };
+	});
+
+	const isOpen = van.state(true);
+
+	return aside(
+		{
+			class: () => `stats-sidebar${!isOpen.val ? " collapsed" : ""}`,
+		},
+		button(
+			{
+				class: "toggle-sidebar-btn hide-arrow",
+				onclick: () => {
+					isOpen.val = !isOpen.val;
+				},
+				title: () => (isOpen.val ? "Hide Sidebar" : "Show Sidebar"),
+			},
+			() => (isOpen.val ? "→" : "←"),
+		),
+		div(
+			{ class: "sidebar-content" },
+			div(
+				{ class: "summary-card" },
+				div({ class: "summary-header" }, h3("Summary")),
+				div(
+					{ class: "summary-grid" },
+					div(
+						{ class: "summary-stat" },
+						span({ class: "stat-label" }, "Transactions"),
+						span({ class: "stat-value" }, () => summary.val.totalTransactions),
+					),
+					div(
+						{ class: "summary-stat" },
+						span({ class: "stat-label" }, "Amount"),
+						span({ class: "stat-value" }, "$", () =>
+							Math.round(summary.val.totalAmount),
+						),
+					),
+					div(
+						{ class: "summary-stat" },
+						span({ class: "stat-label" }, "Average"),
+						span({ class: "stat-value" }, "$", () =>
+							summary.val.averageAmount.toFixed(2),
+						),
+					),
+				),
+			),
+			h3("Last 30 days"),
+			div({ class: "pie-chart-container" }, lastMonthCanvas),
+			h3("By Category"),
+			div({ class: "pie-chart-container" }, categoryCanvas),
+			h3("By Tags"),
+			div({ class: "pie-chart-container" }, tagsCanvas),
+			h3("By Person"),
+			div({ class: "pie-chart-container" }, personCanvas),
+			button(
+				{
+					class: "apply-btn",
+					style: "display: block; margin-top: 20px;",
+					onclick: () => logout(),
+				},
+				"Logout",
+			),
+		),
+	);
 }
