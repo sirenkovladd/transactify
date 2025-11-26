@@ -1,5 +1,6 @@
 import van from "vanjs-core";
 import { categoriesMap } from "./const";
+import type { GroupedTransactions } from "./group";
 import { openTransactionModal } from "./popup";
 
 const { div, span, p, h3, strong } = van.tags;
@@ -416,6 +417,27 @@ export const groupedOptions = {
 	year: (tr: Transaction) => new Date(tr.occurredAt).getFullYear().toString(),
 	tags: (tr: Transaction) => tr.tags,
 	people: (tr: Transaction) => tr.personName,
+};
+
+const compareGroupedByDate = (a: GroupedTransactions, b: GroupedTransactions) =>
+	new Date(a.transactions[0]!.occurredAt).getTime() -
+	new Date(b.transactions[0]!.occurredAt).getTime();
+
+const compareGroupedByTotal = (
+	a: GroupedTransactions,
+	b: GroupedTransactions,
+) => b.total - a.total;
+
+export const groupedOptionsSortFn = {
+	category: compareGroupedByTotal,
+	tags: compareGroupedByTotal,
+	people: compareGroupedByTotal,
+	day: compareGroupedByDate,
+	week: compareGroupedByDate,
+	biweekly: compareGroupedByDate,
+	month: compareGroupedByDate,
+	"half year": compareGroupedByDate,
+	year: compareGroupedByDate,
 };
 
 export function convertTransaction(tr: Transaction) {
