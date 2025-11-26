@@ -105,15 +105,12 @@ body {
   background-color: var(--background-light);
 }
 
-/* Десктопний макет за замовчуванням */
 .desktop-layout {
   display: flex;
   width: 100%;
   max-width: 1700px;
   margin: 0 auto;
   padding: 20px;
-  gap: 30px;
-  /* Відстань між сайдбаром та контентом */
 }
 
 .sidebar {
@@ -147,12 +144,9 @@ body {
 
 .main-content {
   flex-grow: 1;
-  padding: 60px 20px 20px 20px;
-  /* Вже є padding у page-container */
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Центрує список транзакцій */
 }
 
 .transactions-list {
@@ -167,7 +161,6 @@ body {
   color: var(--text-color);
   margin-bottom: 30px;
   text-align: center;
-  /* Центрування заголовка */
 }
 
 /* Мобільний фільтр - схований за замовчуванням */
