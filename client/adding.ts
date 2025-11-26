@@ -3,6 +3,7 @@ import {
 	addTransactions,
 	categories,
 	getDateStr,
+	loggedIn,
 	logout,
 	type NewTransaction,
 	transactions,
@@ -771,8 +772,9 @@ export function setupAdding() {
 
 	return [
 		ImportModalComponent,
-		() =>
-			div(
+		() => {
+			if (!loggedIn.val) return null;
+			return div(
 				{
 					class: "create-btn-container",
 				},
@@ -808,6 +810,7 @@ export function setupAdding() {
 					},
 					"+ New",
 				),
-			),
+			);
+		},
 	];
 }
