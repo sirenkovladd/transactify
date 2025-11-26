@@ -1,19 +1,9 @@
 import van, { type State } from "vanjs-core";
 import {
 	amountFilter,
-	cardFilter,
-	cards,
-	categoriesFromTransaction,
-	categoryFilter,
 	dateEndFilter,
 	dateStartFilter,
-	merchantFilter,
-	merchants,
 	minDate,
-	personFilter,
-	persons,
-	tagFilter,
-	tags,
 	todayDate,
 	transactions,
 } from "./common.ts";
@@ -22,40 +12,24 @@ declare const DateRangePicker: any;
 
 const { div, span, input } = van.tags;
 
-function createMultiSelect(
-	container: HTMLElement,
+export function MultiSelect(
 	optionsState: State<string[]>,
 	selectedState: State<string[]>,
 ) {
-	container.classList.add("multi-select-container");
 	const searchInput = input({
 		class: "multi-select-input",
 		placeholder: "Search...",
 	});
 	const dropdown = div({ class: "multi-select-dropdown" });
 	const tagsContainer = div();
+	const container = div(
+		{ class: "multi-select-container" },
+		tagsContainer,
+		searchInput,
+		dropdown,
+	);
 
 	const renderTags = () => {
-		van.add(
-			tagsContainer,
-			...selectedState.val.map((value) =>
-				span(
-					{ class: "multi-select-tag" },
-					value,
-					span(
-						{
-							class: "multi-select-tag-remove",
-							onclick: () => {
-								selectedState.val = selectedState.val.filter(
-									(v) => v !== value,
-								);
-							},
-						},
-						"×",
-					),
-				),
-			),
-		);
 		tagsContainer.innerHTML = "";
 		van.add(
 			tagsContainer,
@@ -109,8 +83,6 @@ function createMultiSelect(
 	searchInput.addEventListener("input", () => renderOptions(searchInput.value));
 	searchInput.addEventListener("focus", () => renderOptions());
 
-	van.add(container, tagsContainer, searchInput, dropdown);
-
 	van.derive(() => {
 		renderTags();
 		renderOptions(searchInput.value);
@@ -124,6 +96,8 @@ function createMultiSelect(
 	container.addEventListener("click", (e) => {
 		dropdown.style.display = "block";
 	});
+
+	return container;
 }
 
 export function setupFilters() {
@@ -347,35 +321,4 @@ export function setupFilters() {
 
 	initDateRangePicker("date-range-desktop", dateStartFilter, dateEndFilter);
 	initDateRangePicker("date-range-mobile", dateStartFilter, dateEndFilter);
-
-	createMultiSelect(
-		document.getElementById("merchant")!,
-		merchants,
-		merchantFilter,
-	);
-	createMultiSelect(
-		document.getElementById("merchant-mobile")!,
-		merchants,
-		merchantFilter,
-	);
-	createMultiSelect(document.getElementById("card")!, cards, cardFilter);
-	createMultiSelect(document.getElementById("card-mobile")!, cards, cardFilter);
-	createMultiSelect(document.getElementById("person")!, persons, personFilter);
-	createMultiSelect(
-		document.getElementById("person-mobile")!,
-		persons,
-		personFilter,
-	);
-	createMultiSelect(
-		document.getElementById("category")!,
-		categoriesFromTransaction,
-		categoryFilter,
-	);
-	createMultiSelect(
-		document.getElementById("category-mobile")!,
-		categoriesFromTransaction,
-		categoryFilter,
-	);
-	createMultiSelect(document.getElementById("tag")!, tags, tagFilter);
-	createMultiSelect(document.getElementById("tag-mobile")!, tags, tagFilter);
 }

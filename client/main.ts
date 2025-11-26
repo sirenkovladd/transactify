@@ -3,14 +3,24 @@ import { setupAdding } from "./adding.ts";
 import { openCategoryModal, setupCategoryModal } from "./category.ts";
 import {
 	activeTab,
+	cardFilter,
+	cards,
+	categoriesFromTransaction,
+	categoryFilter,
 	convertTransaction,
 	error,
 	filteredTransactions,
 	loading,
 	loggedIn,
 	logout,
+	merchantFilter,
+	merchants,
+	personFilter,
+	persons,
+	tagFilter,
+	tags,
 } from "./common.ts";
-import { setupFilters } from "./filter.ts";
+import { MultiSelect, setupFilters } from "./filter.ts";
 import { GroupEls } from "./group.ts";
 import { Login } from "./login.ts";
 import { TransactionPopup } from "./popup.ts";
@@ -98,27 +108,27 @@ function MobileFilter() {
 		div(
 			{ class: "filter-group" },
 			label({ for: "merchant-mobile" }, "Мерчант:"),
-			div({ id: "merchant-mobile", class: "multi-select-container" }),
+			MultiSelect(merchants, merchantFilter),
 		),
 		div(
 			{ class: "filter-group" },
 			label({ for: "card-mobile" }, "Картка:"),
-			div({ id: "card-mobile", class: "multi-select-container" }),
+			MultiSelect(cards, cardFilter),
 		),
 		div(
 			{ class: "filter-group" },
 			label({ for: "person-mobile" }, "Ім'я:"),
-			div({ id: "person-mobile", class: "multi-select-container" }),
+			MultiSelect(persons, personFilter),
 		),
 		div(
 			{ class: "filter-group" },
 			label({ for: "category-mobile" }, "Категорія:"),
-			div({ id: "category-mobile", class: "multi-select-container" }),
+			MultiSelect(categoriesFromTransaction, categoryFilter),
 		),
 		div(
 			{ class: "filter-group" },
 			label({ for: "tag-mobile" }, "Тег:"),
-			div({ id: "tag-mobile", class: "multi-select-container" }),
+			MultiSelect(tags, tagFilter),
 		),
 	);
 }
@@ -172,27 +182,27 @@ function DesktopLayout() {
 			div(
 				{ class: "filter-group" },
 				label({ for: "merchant" }, "Мерчант:"),
-				div({ id: "merchant", class: "multi-select-container" }),
+				MultiSelect(merchants, merchantFilter),
 			),
 			div(
 				{ class: "filter-group" },
 				label({ for: "card" }, "Картка:"),
-				div({ id: "card", class: "multi-select-container" }),
+				MultiSelect(cards, cardFilter),
 			),
 			div(
 				{ class: "filter-group" },
 				label({ for: "person" }, "Ім'я:"),
-				div({ id: "person", class: "multi-select-container" }),
+				MultiSelect(persons, personFilter),
 			),
 			div(
 				{ class: "filter-group" },
 				label({ for: "category" }, "Категорія:"),
-				div({ id: "category", class: "multi-select-container" }),
+				MultiSelect(categoriesFromTransaction, categoryFilter),
 			),
 			div(
 				{ class: "filter-group" },
 				label({ for: "tag" }, "Тег:"),
-				div({ id: "tag", class: "multi-select-container" }),
+				MultiSelect(tags, tagFilter),
 			),
 			button({ class: "apply-btn desktop-btn" }, "Застосувати фільтри"),
 		),

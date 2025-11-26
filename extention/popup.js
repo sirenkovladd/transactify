@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         operationName: "FetchActivityFeedItems",
         variables: {
           orderBy: "OCCURRED_AT_DESC",
-          first: 50,
+          first: 10,
           cursor: cursor,
           condition: {
             endDate: new Date().toISOString(),
