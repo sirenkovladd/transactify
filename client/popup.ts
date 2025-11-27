@@ -2,6 +2,7 @@ import van, { type State } from "vanjs-core";
 import {
 	categories,
 	fetchTransactions,
+	merchants,
 	token,
 	transactions,
 	type Transaction,
@@ -338,13 +339,80 @@ export function TransactionPopup() {
 						div(
 							{ class: "form-group flex-grow" },
 							FormLabel("Merchant"),
-							input({
-								class: "modal-input",
-								value: merchant,
-								oninput: (e: Event) => {
-									merchant.val = (e.target as HTMLInputElement).value;
-								},
-							}),
+							(() => {
+								const suggestion = van.state("");
+								const matches = van.state<string[]>([]);
+								const matchIndex = van.state(-1);
+
+								const updateSuggestions = (val: string) => {
+									if (!val) {
+										matches.val = [];
+										matchIndex.val = -1;
+										suggestion.val = "";
+										return;
+									}
+
+									const all = merchants.val;
+									const ms = all.filter(
+										(m) =>
+											m.toLowerCase().startsWith(val.toLowerCase()) &&
+											m.toLowerCase() !== val.toLowerCase(),
+									);
+									matches.val = ms;
+
+									if (ms.length > 0) {
+										matchIndex.val = 0;
+										suggestion.val = ms[0].substring(val.length);
+									} else {
+										matchIndex.val = -1;
+										suggestion.val = "";
+									}
+								};
+
+								return div(
+									{ class: "merchant-input-wrapper" },
+									input({
+										class: "modal-input ghost-input",
+										value: van.derive(() => merchant.val + suggestion.val),
+										disabled: true,
+										tabindex: -1,
+									}),
+									input({
+										class: "modal-input real-input",
+										value: merchant,
+										oninput: (e: Event) => {
+											const val = (e.target as HTMLInputElement).value;
+											merchant.val = val;
+											updateSuggestions(val);
+										},
+										onkeydown: (e: KeyboardEvent) => {
+											if (e.key === "Tab" && suggestion.val) {
+												e.preventDefault();
+												merchant.val += suggestion.val;
+												suggestion.val = "";
+												matches.val = [];
+											} else if (
+												(e.key === "ArrowDown" || e.key === "ArrowUp") &&
+												matches.val.length > 1
+											) {
+												e.preventDefault();
+												let idx = matchIndex.val;
+												if (e.key === "ArrowDown") {
+													idx = (idx + 1) % matches.val.length;
+												} else {
+													idx =
+														(idx - 1 + matches.val.length) % matches.val.length;
+												}
+												matchIndex.val = idx;
+												const match = matches.val[idx];
+												if (match) {
+													suggestion.val = match.substring(merchant.val.length);
+												}
+											}
+										},
+									}),
+								);
+							})(),
 						),
 						div(
 							{ class: "form-group amount-group" },

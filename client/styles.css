@@ -221,6 +221,7 @@ body {
 
 .filter-group input[type="range"] {
   -webkit-appearance: none;
+  appearance: none;
   /* Видалити стандартний стиль */
   width: 100%;
   height: 8px;
@@ -1435,7 +1436,7 @@ summary {
   position: relative;
 }
 
-.photo-container img {
+.photo-container>img {
   width: 100%;
   height: auto;
   border-radius: 8px;
@@ -1526,7 +1527,7 @@ summary {
   flex-shrink: 0;
 }
 
-.import-labeled-field input {
+.import-labeled-field>input {
   flex: 1;
   min-width: 100px;
 }
@@ -1837,4 +1838,58 @@ summary {
 
 .copy-all-btn:hover {
   background-color: #218838;
+}
+
+/* Merchant Autocomplete */
+.merchant-input-wrapper {
+  position: relative;
+  display: flex;
+  flex-grow: 1;
+  margin-bottom: 10px;
+  /* Move margin here from input */
+}
+
+.merchant-input-wrapper .modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 1em;
+  padding: 8px 10px;
+  margin-bottom: 0;
+  /* Remove margin from individual inputs */
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  line-height: normal;
+  background: transparent;
+  /* Ensure consistent font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.merchant-input-wrapper .ghost-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  color: #ccc;
+  border-color: transparent;
+  pointer-events: none;
+  /* Override disabled input styles */
+  opacity: 1;
+  -webkit-text-fill-color: #ccc;
+  background-color: transparent;
+}
+
+.merchant-input-wrapper .real-input {
+  position: relative;
+  z-index: 2;
+  color: var(--text-color);
+}
+
+.merchant-input-wrapper .real-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
