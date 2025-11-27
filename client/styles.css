@@ -410,6 +410,7 @@ body {
   opacity: 1;
   flex: 1;
   min-height: 0;
+  scrollbar-width: none;
 }
 
 .stats-sidebar.collapsed {
@@ -1593,8 +1594,233 @@ summary {
   transition: background-color 0.2s ease-in-out;
 }
 
-.import-save-btn:hover {
+
+/* --- New Transaction Modal Design --- */
+
+.modal-content.new-design {
+  padding: 25px;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: none;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.modal-title {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.close-button {
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: var(--text-color);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.form-group.flex-grow {
+  flex-grow: 1;
+}
+
+.form-group.amount-group {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.form-label {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.modal-input,
+.modal-textarea,
+.tags-input-container.multi {
+  padding: 12px 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1em;
+  color: var(--text-color);
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-input:focus,
+.modal-textarea:focus,
+.tags-input-container.multi:focus-within {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.modal-textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Tags specific overrides */
+.tags-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.tags-input-container.multi {
+  min-height: 46px;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  background-color: #e0e0e0;
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.tag-pill-remove {
+  margin-left: 6px;
+  cursor: pointer;
+  color: #666;
+}
+
+.tag-pill-remove:hover {
+  color: #000;
+}
+
+.suggestions-dropdown {
+  top: 100%;
+  margin-top: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Photos */
+#modal-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+#modal-photos img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.add-photo-btn-square {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 80px;
+  border: 2px dashed #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #999;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s;
+  background-color: #f9f9f9;
+}
+
+.add-photo-btn-square:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background-color: #f0f7ff;
+}
+
+.camera-icon {
+  font-size: 1.5em;
+  margin-bottom: 4px;
+}
+
+/* Footer */
+.modal-footer.new-design-footer {
+  margin-top: 25px;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delete-btn-text {
+  background: none;
+  border: none;
+  color: #ff4d4f;
+  font-weight: 700;
+  font-size: 1em;
+  cursor: pointer;
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.delete-btn-text:hover {
+  background-color: #fff1f0;
+  text-decoration: none;
+}
+
+.save-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-btn:hover {
   background-color: var(--primary-hover);
+}
+
+.save-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .copy-all-btn {
