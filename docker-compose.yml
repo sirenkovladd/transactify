@@ -12,10 +12,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
   server:
-    build:
-      context: .
-      args:
-          GIT_COMMIT: ${GIT_COMMIT}
+    image: ghcr.io/sirenkovladd/transactify:main
     ports:
       - "8080:8080"
     depends_on:
