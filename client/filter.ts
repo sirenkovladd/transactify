@@ -7,6 +7,7 @@ import {
 	todayDate,
 	transactions,
 } from "./common.ts";
+import "./filter.css";
 
 declare const DateRangePicker: any;
 

@@ -1,5 +1,6 @@
 import van from "vanjs-core";
 import { filteredTransactions, logout } from "./common.ts";
+import "./stats.css";
 
 declare const Chart: any;
 

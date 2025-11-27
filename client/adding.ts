@@ -1,4 +1,5 @@
 import van, { type ChildDom, type State } from "vanjs-core";
+import "./adding.css";
 import {
 	addTransactions,
 	categories,

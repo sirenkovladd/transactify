@@ -1,0 +1,97 @@
+/* Transaction Card Styles */
+.transaction-card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  padding: 20px 25px;
+  margin-bottom: 20px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.transaction-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 15px;
+}
+
+.category-icon {
+  font-size: 2.2em;
+  line-height: 1;
+}
+
+.transaction-info {
+  flex-grow: 1;
+}
+
+.merchant-name {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.person-name {
+  color: var(--light-text);
+  font-size: 0.95em;
+  margin: 0;
+}
+
+.transaction-amount {
+  text-align: right;
+}
+
+.amount {
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--success-color);
+  display: block;
+}
+
+.date {
+  color: var(--light-text);
+  font-size: 0.9em;
+  margin-top: 2px;
+  display: block;
+}
+
+.card-details p {
+  margin: 8px 0;
+  font-size: 0.95em;
+  color: var(--text-color);
+}
+
+.card-details p strong {
+  color: var(--light-text);
+  font-weight: 500;
+}
+
+.tags {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.tag {
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  display: inline-block;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.tag:hover {
+  background-color: #bbdefb;
+}

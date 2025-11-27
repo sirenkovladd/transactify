@@ -1,5 +1,6 @@
 import van, { type State } from "vanjs-core";
 import { token } from "./common";
+import "./login.css";
 
 const { div, form, h2, input, button, p } = van.tags;
 

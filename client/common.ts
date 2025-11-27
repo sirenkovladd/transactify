@@ -1,4 +1,5 @@
 import van from "vanjs-core";
+import "./common.css";
 import { categoriesMap } from "./const";
 import type { GroupedTransactions } from "./group";
 import { openTransactionModal } from "./popup";
@@ -422,8 +423,8 @@ export const groupedOptions = {
 };
 
 const compareGroupedByDate = (a: GroupedTransactions, b: GroupedTransactions) =>
-	new Date(a.transactions[0]!.occurredAt).getTime() -
-	new Date(b.transactions[0]!.occurredAt).getTime();
+	new Date(b.transactions[0]!.occurredAt).getTime() -
+	new Date(a.transactions[0]!.occurredAt).getTime();
 
 const compareGroupedByTotal = (
 	a: GroupedTransactions,

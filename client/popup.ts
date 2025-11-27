@@ -7,6 +7,7 @@ import {
 	transactions,
 	type Transaction,
 } from "./common.ts";
+import "./popup.css";
 
 const { div, span, img, input, textarea, select, option, button, label } =
 	van.tags;

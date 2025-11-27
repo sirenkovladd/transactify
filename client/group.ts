@@ -8,6 +8,7 @@ import {
 	groupedOptionsSortFn,
 	type Transaction,
 } from "./common.ts";
+import "./group.css";
 import { openTagModal } from "./tags.ts";
 
 const { div, h3, details, summary, span } = van.tags;

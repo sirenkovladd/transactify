@@ -1,4 +1,5 @@
 import { fetchTransactions, token, transactions } from "./common.ts";
+import "./tags.css";
 
 let currentTransactionIDs: number[] = [];
 

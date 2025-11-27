@@ -22,6 +22,7 @@ import {
 import { MultiSelect, setupFilters } from "./filter.ts";
 import { GroupEls } from "./group.ts";
 import { Login } from "./login.ts";
+import "./main.css";
 import { TransactionPopup } from "./popup.ts";
 import { renderSharingSettings } from "./sharing.ts";
 import { StatsSidebar } from "./stats.ts";

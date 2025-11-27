@@ -1,4 +1,5 @@
 import van from "vanjs-core";
+import "./category.css";
 import { categories, fetchTransactions, token } from "./common.ts";
 
 let currentTransactionIDs: number[] = [];

@@ -1,0 +1,100 @@
+/* Tag Modal and Input Styles */
+#tag-modal .modal-content {
+  max-width: 400px;
+}
+
+.tags-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.tags-input-container {
+  position: relative;
+  flex: 1;
+}
+
+.tags-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1em;
+}
+
+.tags-input-container.multi {
+  min-height: 46px;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  cursor: text;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.tag-pill {
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tag-pill-remove {
+  cursor: pointer;
+  font-weight: bold;
+  margin-left: 6px;
+  color: #666;
+}
+
+.tag-pill-remove:hover {
+  color: #000;
+}
+
+.tags-input-real {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex-grow: 1;
+  font-size: 1em;
+  padding: 5px;
+  min-width: 100px;
+}
+
+.suggestions-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1001;
+  margin-top: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: var(--background-dark);
+}
