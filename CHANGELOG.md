@@ -9,16 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add opening transaction in group page
-- show tags in edit form immediately
-- fix edit form to suggest update button
-- add option http or https
+- Import transactions from browser extension
+- Auto-suggestion for merchant names in transaction popup
+- Sorting functionality in grouped view
+- HTTP/HTTPS option for server configuration
+- Opening transaction in group page
+- Show tags in edit form immediately
+
+### Changed
+
+- Refactored CSS into modular component-specific files
+- Improved transaction popup UI and layout
+- Enhanced stats sidebar display and functionality
+- Better filtering based on pattern and exact match
+- Hide "+ New" button when user is not logged in
 
 ### Fixed
 
-- filter in query param
-- filter on startup
-- tag filter
-- fix check existing transaction while importing
-- correct update last used session
-- remove personName from adding transaction
+- Transaction popup saving issues for category and tags
+- Transaction parsing from Wealthsimple import
+- Cashback transaction type handling
+- Large gap spacing issues in UI
+- Filter in query param
+- Filter on startup
+- Tag filter
+- Check existing transaction while importing
+- Update last used session
+- Remove personName from adding transaction

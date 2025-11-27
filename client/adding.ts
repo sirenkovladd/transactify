@@ -5,7 +5,6 @@ import {
 	categories,
 	getDateStr,
 	loggedIn,
-	logout,
 	type NewTransaction,
 	transactions,
 } from "./common.ts";
@@ -803,7 +802,6 @@ export function setupAdding() {
 					),
 					a({ id: "scan-receipt-action-btn" }, "Scan Receipt"),
 					a({ id: "sharing-btn" }, "Sharing"),
-					a({ id: "logout-btn", onclick: () => logout() }, "Logout"),
 				),
 				button(
 					{

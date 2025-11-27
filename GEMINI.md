@@ -65,6 +65,31 @@ To build and run the frontend, you will need to have Node.js and bun installed.
 *   The main entry point for the frontend is `client/main.ts`.
 *   The frontend is built into the `dist` directory.
 
+#### CSS Architecture
+
+*   **Modular CSS**: Each TypeScript component has its own CSS file that is imported directly in the component file.
+*   **Component CSS Files**: 
+    *   `adding.css` - Import modal, transaction creation, and receipt upload styles
+    *   `category.css` - Category modal styles
+    *   `common.css` - Transaction card styles
+    *   `filter.css` - Filter sidebar, multi-select, and slider styles
+    *   `group.css` - Grouping and tag management styles
+    *   `login.css` - Login form styles
+    *   `main.css` - Main layout, tabs, and responsive styles
+    *   `popup.css` - Transaction popup modal styles
+    *   `stats.css` - Stats sidebar and summary styles
+    *   `tags.css` - Tag modal and input styles
+    *   `sharing.css` - Sharing modal styles
+*   **Global Styles**: `styles.css` contains only:
+    *   CSS variables (`:root`)
+    *   Global body styles
+    *   Shared modal components
+    *   Common button styles
+*   **Import Pattern**: Each component TypeScript file imports its CSS at the top:
+    ```typescript
+    import "./component-name.css";
+    ```
+
 ### Database
 
 *   The database schema is defined in the `schema.sql` file.
