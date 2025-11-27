@@ -95,3 +95,43 @@ To build and run the frontend, you will need to have Node.js and bun installed.
 *   The database schema is defined in the `schema.sql` file.
 *   The application uses a PostgreSQL database.
 *   The database schema includes tables for users, sessions, transactions, and tags.
+
+## Documentation Maintenance
+
+### Automatic Updates Rule
+
+**IMPORTANT**: Proactively update `GEMINI.md` and `CHANGELOG.md` whenever relevant changes occur during development.
+
+#### Update GEMINI.md When:
+
+*   **Project Overview**: Technology stack changes, new major features, architecture changes
+*   **Building and Running**: Build commands change, new environment variables, dependency changes, server configuration changes
+*   **Backend Conventions**: New Go packages, API structure changes, database driver changes
+*   **Frontend Conventions**: New UI patterns, component structure changes, build process changes, CSS architecture updates (new component CSS files)
+*   **Database**: Schema changes (new tables, relationships), migration strategy changes
+
+#### Update CHANGELOG.md When:
+
+Under the `[Unreleased]` section, add entries to:
+
+*   **Added**: New features, user-facing functionality, configuration options, CLI commands
+*   **Changed**: UI/UX improvements, refactoring that affects UX, performance improvements, behavior changes
+*   **Fixed**: Bug fixes, UI issues, data handling corrections, performance issues
+*   **Removed**: Deprecated features, removed endpoints, removed configuration options
+
+#### Guidelines:
+
+*   **Be Specific**: Clear descriptions of WHAT changed and WHY it matters
+*   **User-Centric**: Focus on user-facing changes in CHANGELOG.md
+*   **Technical Accuracy**: Ensure GEMINI.md reflects actual current state
+*   **Batch Updates**: Update both files once after completing related changes
+*   **No Duplicates**: Always check current content before adding entries
+
+#### Examples:
+
+*   New feature (merchant autocomplete) → CHANGELOG.md "Added" section only
+*   CSS refactoring → Both CHANGELOG.md "Changed" and GEMINI.md "CSS Architecture"
+*   New environment variable → Both CHANGELOG.md "Added" and GEMINI.md "Building and Running"
+*   Bug fix → CHANGELOG.md "Fixed" section only
+
+See [documentation_update_rule.md](.agent/documentation_update_rule.md) for detailed guidelines.
