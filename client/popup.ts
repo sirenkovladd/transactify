@@ -214,10 +214,7 @@ export function TransactionPopup() {
 					isFocused.val = true;
 				},
 				onblur: () => {
-					// Delay hiding to allow clicking on suggestion
-					setTimeout(() => {
-						isFocused.val = false;
-					}, 1);
+					isFocused.val = false;
 				},
 				onkeydown: (e: KeyboardEvent) => {
 					if (e.key === "Enter" || e.key === ",") {
@@ -288,14 +285,21 @@ export function TransactionPopup() {
 								}`,
 						},
 						filteredTags.val.map((tag) => {
-							const item = div({ class: "suggestion-item" }, tag);
-							item.onclick = () => {
-								if (!tags.val.includes(tag)) {
-									tags.val = [...tags.val, tag];
-								}
-								inputText.val = "";
-								inputEl.focus();
-							};
+							const item = div(
+								{
+									class: "suggestion-item",
+									onmousedown: () => {
+										if (!tags.val.includes(tag)) {
+											tags.val = [...tags.val, tag];
+										}
+										inputText.val = "";
+										setTimeout(() => {
+											inputEl.focus();
+										});
+									},
+								},
+								tag,
+							);
 							return item;
 						}),
 					),
@@ -362,7 +366,7 @@ export function TransactionPopup() {
 
 									if (ms.length > 0) {
 										matchIndex.val = 0;
-										suggestion.val = ms[0].substring(val.length);
+										suggestion.val = ms[0]!.substring(val.length);
 									} else {
 										matchIndex.val = -1;
 										suggestion.val = "";
@@ -458,12 +462,16 @@ export function TransactionPopup() {
 							select(
 								{
 									class: "modal-input",
+									value: category,
 									onchange: (e: Event) => {
 										category.val = (e.target as HTMLSelectElement).value;
 									},
 								},
 								categories.val.map((cat) =>
-									option({ value: cat, selected: cat === category.val }, cat),
+									option(
+										{ value: cat, selected: () => cat === category.val },
+										cat,
+									),
 								),
 							),
 						),

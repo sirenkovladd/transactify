@@ -99,8 +99,6 @@ export function MultiSelect(
 		}
 	});
 
-	// searchInput.addEventListener("input", () => renderOptions(searchInput.value)); - Removed, as van.derive handles it.
-
 	van.derive(() => {
 		renderTags();
 		renderOptions(searchInput.value);
@@ -119,31 +117,6 @@ export function MultiSelect(
 }
 
 export function setupFilters() {
-	const bindTextInputs = (
-		desktopId: string,
-		mobileId: string,
-		state: State<string>,
-		event = "input",
-	) => {
-		const desktopEl = document.getElementById(desktopId) as HTMLInputElement;
-		const mobileEl = document.getElementById(mobileId) as HTMLInputElement;
-
-		if (desktopEl)
-			desktopEl.addEventListener(event, (e) => {
-				state.val = (e.target as HTMLInputElement).value;
-			});
-		if (mobileEl)
-			mobileEl.addEventListener(event, (e) => {
-				state.val = (e.target as HTMLInputElement).value;
-			});
-
-		van.derive(() => {
-			if (desktopEl && desktopEl.value !== state.val)
-				desktopEl.value = state.val;
-			if (mobileEl && mobileEl.value !== state.val) mobileEl.value = state.val;
-		});
-	};
-
 	// Amount Range
 	const amountMinDesktop = document.getElementById(
 		"amount-min",
