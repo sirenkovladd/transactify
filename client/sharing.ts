@@ -12,8 +12,16 @@ import "./sharing.css";
 
 const { div, h3, button, input, ul, li, span } = van.tags;
 
-export function renderSharingSettings(container: HTMLElement) {
-	container.innerHTML = ""; // Clear previous content
+const isOpen = van.state(false);
+
+export function openSharingModal() {
+	isOpen.val = true;
+}
+
+export function SharingModal() {
+	const closeModal = () => {
+		isOpen.val = false;
+	};
 
 	const tokens = van.state<string[]>([]);
 	const subscriptions = van.state<{
@@ -28,6 +36,14 @@ export function renderSharingSettings(container: HTMLElement) {
 	const fetchSubscriptions = async () => {
 		subscriptions.val = await getSubscriptions();
 	};
+
+	// Fetch data when modal opens
+	van.derive(() => {
+		if (isOpen.val) {
+			fetchTokens();
+			fetchSubscriptions();
+		}
+	});
 
 	const Tokens = () =>
 		div(
@@ -110,8 +126,29 @@ export function renderSharingSettings(container: HTMLElement) {
 		);
 	};
 
-	van.add(container, div(Tokens(), AddConnection(), Subscriptions()));
+	return () => {
+		if (!isOpen.val) return "";
 
-	fetchTokens();
-	fetchSubscriptions();
+		return div(
+			{
+				id: "sharing-modal",
+				class: "modal",
+				style: "display: block;",
+				onclick: (e) => {
+					if (e.target === e.currentTarget) closeModal();
+				},
+			},
+			div(
+				{ class: "modal-content" },
+				span({ class: "close-button", onclick: closeModal }, "×"),
+				h3("Sharing Settings"),
+				div(
+					{ id: "sharing-settings-content" },
+					Tokens,
+					AddConnection,
+					Subscriptions,
+				),
+			),
+		);
+	};
 }

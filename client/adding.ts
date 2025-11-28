@@ -517,10 +517,205 @@ function renderParsedTransactions(
 	return container;
 }
 
-export function setupAdding() {
-	const openImportModal = van.state(false);
-	const externalImportData = van.state<ParsedImportRow[] | null>(null);
+export function NewTransactionModal() {
+	const dateVal = van.state("");
+	const merchantVal = van.state("");
+	const amountVal = van.state("");
+	const cardVal = van.state("");
+	const categoryVal = van.state("");
+	const tagsVal = van.state("");
 
+	const closeModal = () => {
+		openNewTransactionModal.val = false;
+	};
+
+	const saveTransaction = async () => {
+		const amount = parseFloat(amountVal.val);
+		if (Number.isNaN(amount)) {
+			alert("Invalid amount");
+			return;
+		}
+
+		const newTransaction: NewTransaction = {
+			occurredAt: dateVal.val,
+			merchant: merchantVal.val,
+			amount: amount,
+			card: cardVal.val,
+			category: categoryVal.val,
+			tags: tagsVal.val
+				.split(",")
+				.map((tag) => tag.trim())
+				.filter((t) => t),
+			currency: "CAD",
+		};
+
+		await addTransactions([newTransaction]);
+		closeModal();
+	};
+
+	return () => {
+		if (!openNewTransactionModal.val) return "";
+
+		return div(
+			{
+				id: "create-new-transaction-modal",
+				class: "modal",
+				style: "display: block;",
+				onclick: (e) => {
+					if (e.target === e.currentTarget) closeModal();
+				},
+			},
+			div(
+				{ class: "modal-content" },
+				span({ class: "close-button", onclick: closeModal }, "×"),
+				van.tags.h3("Create New Transaction"),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Date:"),
+					input({
+						type: "datetime-local",
+						id: "new-transaction-date",
+						class: "modal-input",
+						value: dateVal,
+						oninput: (e: Event) => {
+							dateVal.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Merchant:"),
+					input({
+						type: "text",
+						id: "new-transaction-merchant",
+						class: "modal-input",
+						value: merchantVal,
+						oninput: (e: Event) => {
+							merchantVal.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Amount:"),
+					input({
+						type: "number",
+						id: "new-transaction-amount",
+						class: "modal-input",
+						value: amountVal,
+						oninput: (e: Event) => {
+							amountVal.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Card:"),
+					input({
+						type: "text",
+						id: "new-transaction-card",
+						class: "modal-input",
+						value: cardVal,
+						oninput: (e: Event) => {
+							cardVal.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Category:"),
+					select(
+						{
+							id: "new-transaction-category",
+							class: "modal-input",
+							value: categoryVal,
+							onchange: (e: Event) => {
+								categoryVal.val = (e.target as HTMLSelectElement).value;
+							},
+						},
+						categories.val.map((c) => option({ value: c }, c)),
+					),
+				),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Tags:"),
+					input({
+						type: "text",
+						id: "new-transaction-tags",
+						class: "modal-input",
+						value: tagsVal,
+						oninput: (e: Event) => {
+							tagsVal.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				div(
+					{ class: "modal-footer" },
+					button(
+						{
+							id: "save-new-transaction-btn",
+							class: "apply-btn",
+							onclick: saveTransaction,
+						},
+						"Save Transaction",
+					),
+				),
+			),
+		);
+	};
+}
+
+export function ScanReceiptModal() {
+	const closeModal = () => {
+		openScanReceiptModal.val = false;
+	};
+
+	return () => {
+		if (!openScanReceiptModal.val) return "";
+
+		return div(
+			{
+				id: "scan-receipt-modal",
+				class: "modal",
+				style: "display: block;",
+				onclick: (e) => {
+					if (e.target === e.currentTarget) closeModal();
+				},
+			},
+			div(
+				{ class: "modal-content" },
+				span({ class: "close-button", onclick: closeModal }, "×"),
+				van.tags.h3("Scan Receipt"),
+				div(
+					{ id: "scan-receipt-container" },
+					label(
+						{ for: "receipt-upload", class: "receipt-upload-label" },
+						div({ class: "upload-icon" }, "📷"),
+						div("Click to upload a receipt"),
+					),
+					input({
+						type: "file",
+						id: "receipt-upload",
+						accept: "image/*",
+						style: "display: none;",
+					}),
+					button(
+						{ id: "scan-receipt-btn", class: "apply-btn" },
+						"Scan", // Logic to be implemented
+					),
+				),
+				div({ id: "parsed-receipt-container" }),
+			),
+		);
+	};
+}
+
+const openNewTransactionModal = van.state(false);
+const openScanReceiptModal = van.state(false);
+const openImportModal = van.state(false);
+const externalImportData = van.state<ParsedImportRow[] | null>(null);
+
+export function setupAdding() {
 	const urlParams = new URLSearchParams(window.location.search);
 	if (urlParams.get("add") === "extension") {
 		window.addEventListener("message", (event) => {
@@ -680,87 +875,10 @@ export function setupAdding() {
 		return modal;
 	};
 
-	const createNewTransactionModal = document.getElementById(
-		"create-new-transaction-modal",
-	);
-	const createNewTransactionCloseButton =
-		createNewTransactionModal?.getElementsByClassName(
-			"close-button",
-		)[0] as HTMLElement;
-	const saveNewTransactionBtn = document.getElementById(
-		"save-new-transaction-btn",
-	);
-	const categoryDropdown = document.getElementById(
-		"new-transaction-category",
-	) as HTMLSelectElement;
-
-	if (
-		createNewTransactionModal &&
-		createNewTransactionCloseButton &&
-		saveNewTransactionBtn &&
-		categoryDropdown
-	) {
-		createNewTransactionCloseButton.onclick = () => {
-			createNewTransactionModal.style.display = "none";
-		};
-
-		window.onclick = (event) => {
-			if (event.target === createNewTransactionModal) {
-				createNewTransactionModal.style.display = "none";
-			}
-		};
-
-		saveNewTransactionBtn.onclick = () => {
-			const newTransaction: NewTransaction = {
-				occurredAt: (
-					document.getElementById("new-transaction-date") as HTMLInputElement
-				).value,
-				merchant: (
-					document.getElementById(
-						"new-transaction-merchant",
-					) as HTMLInputElement
-				).value,
-				amount: parseFloat(
-					(
-						document.getElementById(
-							"new-transaction-amount",
-						) as HTMLInputElement
-					).value,
-				),
-				card: (
-					document.getElementById("new-transaction-card") as HTMLInputElement
-				).value,
-				category: (
-					document.getElementById(
-						"new-transaction-category",
-					) as HTMLSelectElement
-				).value,
-				tags: (
-					document.getElementById("new-transaction-tags") as HTMLInputElement
-				).value
-					.split(",")
-					.map((tag) => tag.trim())
-					.filter((t) => t),
-				currency: "CAD",
-			};
-
-			addTransactions([newTransaction]).then(() => {
-				createNewTransactionModal.style.display = "none";
-			});
-		};
-
-		van.derive(() => {
-			categoryDropdown.innerHTML = "";
-			categories.val.forEach((category) => {
-				van.add(categoryDropdown, option({ value: category }, category));
-			});
-		});
-	}
-
 	return [
 		ImportModalComponent,
 		() => {
-			if (!loggedIn.val) return null;
+			if (!loggedIn.val) return "";
 			return div(
 				{
 					class: "create-btn-container",
@@ -771,9 +889,7 @@ export function setupAdding() {
 						{
 							id: "create-new-transaction-btn",
 							onclick: () => {
-								if (createNewTransactionModal) {
-									createNewTransactionModal.style.display = "block";
-								}
+								openNewTransactionModal.val = true;
 							},
 						},
 						"New Transaction",
@@ -787,8 +903,32 @@ export function setupAdding() {
 						},
 						"Import...",
 					),
-					a({ id: "scan-receipt-action-btn" }, "Scan Receipt"),
-					a({ id: "sharing-btn" }, "Sharing"),
+					a(
+						{
+							id: "scan-receipt-action-btn",
+							onclick: () => {
+								openScanReceiptModal.val = true;
+							},
+						},
+						"Scan Receipt",
+					),
+					a(
+						{
+							id: "sharing-btn",
+							onclick: () => {
+								// This needs to be wired up to openSharingModal from sharing.ts
+								// But we can't import it here directly if it creates a cycle?
+								// Actually, sharing.ts imports common.ts, adding.ts imports common.ts.
+								// We can dispatch an event or use a shared state.
+								// Or we can just export the open function and import it in main.ts and pass it down?
+								// Or simpler: main.ts handles the button click?
+								// But the button is created here.
+								// Let's use a custom event for now to avoid circular deps if any.
+								window.dispatchEvent(new CustomEvent("open-sharing-modal"));
+							},
+						},
+						"Sharing",
+					),
 				),
 				button(
 					{

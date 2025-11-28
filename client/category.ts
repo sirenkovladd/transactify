@@ -67,7 +67,7 @@ export function CategoryModal() {
 	};
 
 	return () => {
-		if (!isOpen.val) return null;
+		if (!isOpen.val) return "";
 
 		return div(
 			{

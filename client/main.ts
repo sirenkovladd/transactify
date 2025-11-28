@@ -1,5 +1,9 @@
 import van from "vanjs-core";
-import { setupAdding } from "./adding.ts";
+import {
+	NewTransactionModal,
+	ScanReceiptModal,
+	setupAdding,
+} from "./adding.ts";
 import { CategoryModal, openCategoryModal } from "./category.ts";
 import {
 	activeTab,
@@ -24,44 +28,11 @@ import { GroupEls } from "./group.ts";
 import { Login } from "./login.ts";
 import "./main.css";
 import { TransactionPopup } from "./popup.ts";
-import { renderSharingSettings } from "./sharing.ts";
+import { openSharingModal, SharingModal } from "./sharing.ts";
 import { StatsSidebar } from "./stats.ts";
-import { openTagModal, setupTagModal } from "./tags.ts";
+import { openTagModal, TagModal } from "./tags.ts";
 
 const { div, span, aside, input, h2, label, button, main } = van.tags;
-
-function setupSharingModal() {
-	const sharingModal = document.getElementById("sharing-modal") as HTMLElement;
-	const sharingBtn = document.getElementById("sharing-btn") as HTMLElement;
-	const sharingCloseButton = sharingModal?.getElementsByClassName(
-		"close-button",
-	)[0] as HTMLElement;
-	const sharingSettingsContent = document.getElementById(
-		"sharing-settings-content",
-	) as HTMLElement;
-
-	if (
-		sharingModal &&
-		sharingBtn &&
-		sharingCloseButton &&
-		sharingSettingsContent
-	) {
-		sharingBtn.onclick = () => {
-			sharingModal.style.display = "block";
-			renderSharingSettings(sharingSettingsContent);
-		};
-
-		sharingCloseButton.onclick = () => {
-			sharingModal.style.display = "none";
-		};
-
-		window.onclick = (event) => {
-			if (event.target === sharingModal) {
-				sharingModal.style.display = "none";
-			}
-		};
-	}
-}
 
 function MobileFilter() {
 	return div(
@@ -288,13 +259,20 @@ function mainInit() {
 		App,
 		TransactionPopup,
 		CategoryModal(),
+		TagModal(),
+		SharingModal(),
+		NewTransactionModal(),
+		ScanReceiptModal(),
 		...setupAdding(),
 	);
 
+	// Listen for custom event to open sharing modal
+	window.addEventListener("open-sharing-modal", () => {
+		openSharingModal(); // TODO ???
+	});
+
 	queueMicrotask(() => {
 		setupFilters();
-		setupTagModal();
-		setupSharingModal(); // Call the new setup function
 	});
 }
 

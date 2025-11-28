@@ -89,6 +89,18 @@ const Modal = () => div(
 )
 ```
 
+### Conditional Rendering
+When conditionally rendering components based on state, always return an empty string `""` instead of `null` if the component should be hidden.
+-   **Why**: Returning `null` from a reactive callback can cause the element to be permanently removed from the DOM in a way that VanJS cannot easily restore when the state changes back. Returning `""` keeps a placeholder (text node) that VanJS can update.
+-   **Pattern**:
+    ```js
+    const Component = () => {
+      if (!isVisible.val) return "" // Good
+      // if (!isVisible.val) return null // Bad - might not reappear
+      return div("Visible Content")
+    }
+    ```
+
 ## Project Specifics
 -   **Entry Point**: `client/main.ts`
 -   **Styling**: Use CSS classes (defined in `index.css` or similar) and toggle them via state, rather than heavy inline styles.

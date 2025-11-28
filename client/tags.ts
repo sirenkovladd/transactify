@@ -1,21 +1,44 @@
 import { fetchTransactions, token, transactions } from "./common.ts";
 import "./tags.css";
 
-let currentTransactionIDs: number[] = [];
+import van from "vanjs-core";
+import "./tags.css";
 
-export function setupTagModal() {
-	function closeModal() {
-		modal.style.display = "none";
-	}
+const { div, h3, label, input, button, span } = van.tags;
 
-	async function saveTag() {
-		const tag = tagInput.value.trim();
+const isOpen = van.state(false);
+const currentTransactionIDs = van.state<number[]>([]);
+const modalTitle = van.state("Add Tag");
+const tagInputVal = van.state("");
+const suggestions = van.state<string[]>([]);
+const showSuggestions = van.state(false);
+
+export function openTagModal(
+	transactionIDs: number[],
+	title: string = "Add Tag",
+) {
+	currentTransactionIDs.val = transactionIDs;
+	modalTitle.val = `${title} (${transactionIDs.length} transactions)`;
+	tagInputVal.val = "";
+	isOpen.val = true;
+	// Focus input after render? We might need a ref or effect.
+	// For now, simple state open is enough.
+}
+
+export function TagModal() {
+	const closeModal = () => {
+		isOpen.val = false;
+		showSuggestions.val = false;
+	};
+
+	const saveTag = async () => {
+		const tag = tagInputVal.val.trim();
 		if (!tag) {
 			alert("Please enter a tag.");
 			return;
 		}
 
-		if (currentTransactionIDs.length === 0) {
+		if (currentTransactionIDs.val.length === 0) {
 			alert("No transactions selected.");
 			return;
 		}
@@ -28,7 +51,7 @@ export function setupTagModal() {
 					Authorization: `Bearer ${token.val}`,
 				},
 				body: JSON.stringify({
-					transaction_ids: currentTransactionIDs,
+					transaction_ids: currentTransactionIDs.val,
 					tag: tag,
 					action: "add",
 				}),
@@ -45,82 +68,98 @@ export function setupTagModal() {
 			console.error(err);
 			alert("Error adding tag.");
 		}
-	}
-	const modal = document.getElementById("tag-modal")!;
-	const closeButton = modal.querySelector(".close-button") as HTMLElement;
-	const saveButton = document.getElementById("save-tag-btn")!;
-	const tagInput = document.getElementById(
-		"tag-modal-input",
-	) as HTMLInputElement;
-	const modalTitle = document.getElementById("tag-modal-title")!;
-	const suggestionsContainer = document.getElementById(
-		"tag-suggestions",
-	) as HTMLElement;
+	};
 
-	let allTags: string[] = [];
-
-	function updateAllTags() {
+	const updateSuggestions = (inputText: string) => {
 		const tagSet = new Set<string>();
 		transactions.val.forEach((t) => {
 			t.tags.forEach((tag) => {
 				tagSet.add(tag);
 			});
 		});
-		allTags = Array.from(tagSet).sort();
-	}
-
-	function showSuggestions() {
-		const inputText = tagInput.value.toLowerCase();
-		const filteredTags = allTags.filter((tag) =>
-			tag.toLowerCase().includes(inputText),
+		const allTags = Array.from(tagSet).sort();
+		suggestions.val = allTags.filter((tag) =>
+			tag.toLowerCase().includes(inputText.toLowerCase()),
 		);
+		showSuggestions.val = suggestions.val.length > 0;
+	};
 
-		suggestionsContainer.innerHTML = "";
-		if (filteredTags.length > 0) {
-			filteredTags.forEach((tag) => {
-				const item = document.createElement("div");
-				item.className = "suggestion-item";
-				item.textContent = tag;
-				item.addEventListener("click", () => {
-					tagInput.value = tag;
-					suggestionsContainer.style.display = "none";
-				});
-				suggestionsContainer.appendChild(item);
-			});
-			suggestionsContainer.style.display = "block";
-		} else {
-			suggestionsContainer.style.display = "none";
-		}
-	}
+	return () => {
+		if (!isOpen.val) return "";
 
-	tagInput.addEventListener("focus", () => {
-		updateAllTags();
-		showSuggestions();
-	});
-
-	tagInput.addEventListener("input", showSuggestions);
-
-	tagInput.addEventListener("blur", () => {
-		setTimeout(() => {
-			suggestionsContainer.style.display = "none";
-		}, 200); // Delay to allow click on suggestion
-	});
-
-	closeButton.onclick = closeModal;
-	window.addEventListener("click", (event) => {
-		if (event.target === modal) {
-			closeModal();
-		}
-	});
-	saveButton.onclick = saveTag;
-
-	openTagModal = (transactionIDs: number[], title: string = "Add Tag") => {
-		currentTransactionIDs = transactionIDs;
-		modalTitle.textContent = `${title} (${transactionIDs.length} transactions)`;
-		tagInput.value = "";
-		modal.style.display = "block";
-		tagInput.focus();
+		return div(
+			{
+				id: "tag-modal",
+				class: "modal",
+				style: "display: block;",
+				onclick: (e) => {
+					if (e.target === e.currentTarget) closeModal();
+				},
+			},
+			div(
+				{ class: "modal-content" },
+				span({ class: "close-button", onclick: closeModal }, "×"),
+				h3({ id: "tag-modal-title" }, modalTitle),
+				div(
+					{ class: "editable-field" },
+					label({ class: "editable-label" }, "Tag:"),
+					div(
+						{ class: "tags-input-container" },
+						input({
+							type: "text",
+							id: "tag-modal-input",
+							class: "modal-input",
+							value: tagInputVal,
+							oninput: (e: Event) => {
+								const val = (e.target as HTMLInputElement).value;
+								tagInputVal.val = val;
+								updateSuggestions(val);
+							},
+							onfocus: (e: Event) => {
+								const val = (e.target as HTMLInputElement).value;
+								updateSuggestions(val);
+							},
+							onblur: () => {
+								setTimeout(() => {
+									showSuggestions.val = false;
+								}, 200);
+							},
+						}),
+						() =>
+							div(
+								{
+									id: "tag-suggestions",
+									class: "suggestions-dropdown",
+									style: () =>
+										`display: ${showSuggestions.val ? "block" : "none"}`,
+								},
+								suggestions.val.map((tag) =>
+									div(
+										{
+											class: "suggestion-item",
+											onclick: () => {
+												tagInputVal.val = tag;
+												showSuggestions.val = false;
+											},
+										},
+										tag,
+									),
+								),
+							),
+					),
+				),
+				div(
+					{ class: "modal-footer" },
+					button(
+						{
+							id: "save-tag-btn",
+							class: "apply-btn",
+							onclick: saveTag,
+						},
+						"Save",
+					),
+				),
+			),
+		);
 	};
 }
-
-export let openTagModal: (transactionIDs: number[], title?: string) => void;

@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better filtering based on pattern and exact match
 - Hide "+ New" button when user is not logged in
 - Refactored client-side reactivity to minimize DOM updates in main list, groups, and filters
+- Refactored `CategoryModal`, `TagModal`, `SharingModal`, `NewTransactionModal`, and `ScanReceiptModal` to be pure VanJS components, removing dependency on `index.html`.
+- Updated `client/main.ts` to mount new modal components.
+- Refactored `client/adding.ts` to use reactive components for modals.
+- Improved reactivity of transaction list rendering.
 - Converted `CategoryModal` to a reactive VanJS component
 - Refactored `ImportModal` to use reactive state, removing manual DOM manipulation
 
