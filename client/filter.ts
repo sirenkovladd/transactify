@@ -31,11 +31,10 @@ export function MultiSelect(
 		dropdown,
 	);
 
-	const renderTags = () => {
-		tagsContainer.innerHTML = "";
-		van.add(
-			tagsContainer,
-			...selectedState.val.map((value) => {
+	const renderTags = () =>
+		div(
+			{ style: "display: contents;" },
+			selectedState.val.map((value) => {
 				const isCustom = !optionsState.val.includes(value);
 				return span(
 					{
@@ -56,27 +55,32 @@ export function MultiSelect(
 				);
 			}),
 		);
-	};
 
 	const handleInputConfirm = (value: string) => {
 		if (value && !selectedState.val.includes(value)) {
 			selectedState.val = [...selectedState.val, value];
 			searchInput.value = "";
+			// Trigger input event to update filter
+			searchInput.dispatchEvent(new Event("input"));
 		}
 	};
 
-	const renderOptions = (filter = "") => {
-		const lowerFilter = filter.toLowerCase();
+	const filterState = van.state("");
+	searchInput.oninput = (e: Event) => {
+		filterState.val = (e.target as HTMLInputElement).value;
+	};
+
+	const renderOptions = () => {
+		const lowerFilter = filterState.val.toLowerCase();
 		const availableOptions = optionsState.val.filter(
 			(opt) =>
 				!selectedState.val.includes(opt) &&
 				opt.toLowerCase().includes(lowerFilter),
 		);
 
-		dropdown.innerHTML = "";
-		van.add(
-			dropdown,
-			...availableOptions.map((opt) =>
+		return div(
+			{ style: "display: contents;" },
+			availableOptions.map((opt) =>
 				div(
 					{
 						class: "multi-select-option",
@@ -90,19 +94,14 @@ export function MultiSelect(
 		);
 	};
 
-	searchInput.addEventListener("input", () => renderOptions(searchInput.value));
-	searchInput.addEventListener("focus", () => renderOptions());
+	van.add(tagsContainer, renderTags);
+	van.add(dropdown, renderOptions);
 
 	searchInput.addEventListener("keydown", (e) => {
 		if (e.key === "Enter") {
 			e.preventDefault();
 			handleInputConfirm(searchInput.value);
 		}
-	});
-
-	van.derive(() => {
-		renderTags();
-		renderOptions(searchInput.value);
 	});
 
 	document.addEventListener("click", (e) => {

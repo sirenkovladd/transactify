@@ -1,6 +1,6 @@
 import van from "vanjs-core";
 import { setupAdding } from "./adding.ts";
-import { openCategoryModal, setupCategoryModal } from "./category.ts";
+import { CategoryModal, openCategoryModal } from "./category.ts";
 import {
 	activeTab,
 	cardFilter,
@@ -260,7 +260,10 @@ function DesktopLayout() {
 					if (error.val) {
 						return div(error.val);
 					}
-					return div(filteredTransactions.val.map(convertTransaction));
+					return div(
+						{ style: "display: contents;" },
+						filteredTransactions.val.map(convertTransaction),
+					);
 				}),
 			),
 		),
@@ -280,12 +283,17 @@ function App() {
 }
 
 function mainInit() {
-	van.add(document.body, App, TransactionPopup, ...setupAdding());
+	van.add(
+		document.body,
+		App,
+		TransactionPopup,
+		CategoryModal(),
+		...setupAdding(),
+	);
 
 	queueMicrotask(() => {
 		setupFilters();
 		setupTagModal();
-		setupCategoryModal();
 		setupSharingModal(); // Call the new setup function
 	});
 }

@@ -538,6 +538,7 @@ export function setupAdding() {
 		if (!openImportModal.val) return "";
 
 		const active = van.state<"Wealthsimple" | "CSV" | "CIBC">("Wealthsimple");
+		const parsedDataState = van.state<ParsedImportRow[]>([]);
 
 		const Tab = (type: typeof active.val, ...children: ChildDom[]) =>
 			div(
@@ -545,23 +546,10 @@ export function setupAdding() {
 				...children,
 			);
 
-		const parsedTransactionsContainer = div({
-			id: "parsed-transactions-container",
-		});
-
-		if (externalImportData.val) {
-			const existing = transactions?.val || [];
+		// Initialize parsedDataState if external data exists
+		if (externalImportData.val && parsedDataState.val.length === 0) {
 			const rawWealthsimple = JSON.stringify(externalImportData.val);
-			const transactionsParsed = parseWealthsimple(rawWealthsimple);
-			van.add(
-				parsedTransactionsContainer,
-				renderParsedTransactions(
-					transactionsParsed,
-					undefined,
-					openImportModal,
-					existing,
-				),
-			);
+			parsedDataState.val = parseWealthsimple(rawWealthsimple);
 		}
 
 		const wealthsimpleInput = textarea({
@@ -581,19 +569,14 @@ export function setupAdding() {
 		const parseData = (
 			inputEl: HTMLTextAreaElement,
 			parser: (data: string) => ParsedImportRow[],
-			card?: string,
 		) => {
 			return () => {
 				const data = inputEl.value;
-				const parsedData = parser(data);
-				const existing = transactions?.val || [];
-				parsedTransactionsContainer.innerHTML = "";
-				van.add(
-					parsedTransactionsContainer,
-					renderParsedTransactions(parsedData, card, openImportModal, existing),
-				);
+				parsedDataState.val = parser(data);
 			};
 		};
+
+		const existing = transactions?.val || [];
 
 		const modal = div(
 			{
@@ -645,7 +628,6 @@ export function setupAdding() {
 							onclick: parseData(
 								wealthsimpleInput as HTMLTextAreaElement,
 								parseWealthsimple,
-								"wealthsimple",
 							),
 						},
 						"Preview",
@@ -658,11 +640,7 @@ export function setupAdding() {
 						{
 							id: "parse-cibc-btn",
 							class: "apply-btn",
-							onclick: parseData(
-								cibcInput as HTMLTextAreaElement,
-								parseCIBC,
-								"cibc",
-							),
+							onclick: parseData(cibcInput as HTMLTextAreaElement, parseCIBC),
 						},
 						"Preview",
 					),
@@ -686,7 +664,16 @@ export function setupAdding() {
 						"Preview",
 					),
 				),
-				parsedTransactionsContainer,
+				div({ id: "parsed-transactions-container" }, () =>
+					parsedDataState.val.length > 0
+						? renderParsedTransactions(
+								parsedDataState.val,
+								undefined,
+								openImportModal,
+								existing,
+							)
+						: "",
+				),
 			),
 		);
 

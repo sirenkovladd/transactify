@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced stats sidebar display and functionality
 - Better filtering based on pattern and exact match
 - Hide "+ New" button when user is not logged in
+- Refactored client-side reactivity to minimize DOM updates in main list, groups, and filters
+- Converted `CategoryModal` to a reactive VanJS component
+- Refactored `ImportModal` to use reactive state, removing manual DOM manipulation
 
 ### Fixed
 

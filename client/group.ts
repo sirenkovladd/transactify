@@ -119,6 +119,7 @@ export function GroupEls() {
 				groupedOptionsSortFn[groupedOption.val],
 			);
 			return div(
+				{ style: "display: contents;" },
 				grouped.map(({ key, transactions, total }) => {
 					const commonTags = getCommonTags(transactions);
 					const transactionIDs = transactions.map((t) => t.id);
@@ -163,7 +164,11 @@ export function GroupEls() {
 								),
 							),
 						),
-						() => div(transactions.map(convertTransaction)),
+						() =>
+							div(
+								{ style: "display: contents;" },
+								transactions.map(convertTransaction),
+							),
 					);
 				}),
 			);
