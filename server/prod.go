@@ -3,3 +3,5 @@
 package server
 
 const Production = true
+
+var BuildTime = "-"

@@ -187,9 +187,15 @@ export async function fetchTransactions() {
 	loading.val = true;
 	error.val = "";
 	try {
-		const headers = {
+		const headers: HeadersInit = {
 			Authorization: `Bearer ${token.val}`,
 		};
+
+		const cachedEtag = localStorage.getItem("transactions_etag");
+		if (cachedEtag) {
+			headers["If-None-Match"] = cachedEtag;
+		}
+
 		const [
 			transactionsResponse,
 			// categoriesResponse,
@@ -203,21 +209,40 @@ export async function fetchTransactions() {
 			return;
 		}
 
+		if (transactionsResponse.status === 304) {
+			const cachedData = localStorage.getItem("transactions_data");
+			if (cachedData) {
+				transactions.val = JSON.parse(cachedData);
+			} else {
+				// Fallback if cache is missing but server returned 304 (shouldn't happen normally)
+				// Force fetch without ETag
+				localStorage.removeItem("transactions_etag");
+				await fetchTransactions();
+				return;
+			}
+		} else if (transactionsResponse.ok) {
+			const transactionsData = await transactionsResponse.json();
+			transactions.val = transactionsData;
+
+			const newEtag = transactionsResponse.headers.get("ETag");
+			if (newEtag) {
+				localStorage.setItem("transactions_etag", newEtag);
+				localStorage.setItem(
+					"transactions_data",
+					JSON.stringify(transactionsData),
+				);
+			}
+		} else {
+			throw new Error("Failed to fetch transactions");
+		}
+
 		// if (categoriesResponse.status === 401) {
 		//   token.val = '';
 		//   return;
 		// }
-
-		if (!transactionsResponse.ok) {
-			throw new Error("Failed to fetch transactions");
-		}
 		// if (!categoriesResponse.ok) {
 		//   throw new Error('Failed to fetch categories');
 		// }
-
-		const transactionsData = await transactionsResponse.json();
-		transactions.val = transactionsData;
-
 		// const categoriesData = await categoriesResponse.json();
 		// categories.val = categoriesData;
 	} catch (e: any) {

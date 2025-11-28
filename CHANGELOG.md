@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP/HTTPS option for server configuration
 - Opening transaction in group page
 - Show tags in edit form immediately
+- Client-side caching for transactions list using ETags
+- Build timestamp for static file caching with Last-Modified headers
 
 ### Changed
 

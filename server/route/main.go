@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"path"
+	"time"
 
 	root "code.sirenko.ca/transaction"
 	"code.sirenko.ca/transaction/server"
@@ -38,9 +40,83 @@ func (pfs PrefixFS) Open(name string) (fs.File, error) {
 	return pfs.fs.Open(path.Join(pfs.prefix, name))
 }
 
+// modTimeFile wraps fs.File to override ModTime
+type modTimeFile struct {
+	fs.File
+	modTime time.Time
+}
+
+func (f modTimeFile) Stat() (fs.FileInfo, error) {
+	info, err := f.File.Stat()
+	if err != nil {
+		return nil, err
+	}
+	return modTimeFileInfo{info, f.modTime}, nil
+}
+
+func (f modTimeFile) Readdir(count int) ([]fs.FileInfo, error) {
+	// Type assert to http.File to access Readdir
+	if httpFile, ok := f.File.(http.File); ok {
+		infos, err := httpFile.Readdir(count)
+		if err != nil {
+			return nil, err
+		}
+		// Wrap each FileInfo with our custom modTime
+		wrapped := make([]fs.FileInfo, len(infos))
+		for i, info := range infos {
+			wrapped[i] = modTimeFileInfo{info, f.modTime}
+		}
+		return wrapped, nil
+	}
+	return nil, nil
+}
+
+func (f modTimeFile) Seek(offset int64, whence int) (int64, error) {
+	// Type assert to io.Seeker to access Seek
+	if seeker, ok := f.File.(io.Seeker); ok {
+		return seeker.Seek(offset, whence)
+	}
+	return 0, nil
+}
+
+// modTimeFileInfo wraps fs.FileInfo to override ModTime
+type modTimeFileInfo struct {
+	fs.FileInfo
+	modTime time.Time
+}
+
+func (fi modTimeFileInfo) ModTime() time.Time {
+	return fi.modTime
+}
+
+// modTimeFS wraps http.FileSystem to set a fixed modification time for all files
+type modTimeFS struct {
+	fs      http.FileSystem
+	modTime time.Time
+}
+
+func (mtfs modTimeFS) Open(name string) (http.File, error) {
+	f, err := mtfs.fs.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	return modTimeFile{f, mtfs.modTime}, nil
+}
+
 func getFileSystem() http.FileSystem {
 	if server.Production {
-		return http.FS(PrefixFS{"dist", http.FS(root.WebContent)})
+		// Parse the build time from the server package
+		// Format is RFC3339: 2024-01-01T00:00:00Z
+		modTime := time.Time{}
+		if server.BuildTime != "-" {
+			if parsedTime, err := time.Parse(time.RFC3339, server.BuildTime); err == nil {
+				modTime = parsedTime
+			}
+		}
+		return modTimeFS{
+			fs:      http.FS(PrefixFS{"dist", http.FS(root.WebContent)}),
+			modTime: modTime,
+		}
 	}
 	fmt.Println("Use hot reload for files")
 	return http.Dir("./dist")

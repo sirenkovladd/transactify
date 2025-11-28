@@ -64,6 +64,7 @@ To build and run the frontend, you will need to have Node.js and bun installed.
 *   The frontend code is located in the `client` directory.
 *   The main entry point for the frontend is `client/main.ts`.
 *   The frontend is built into the `dist` directory.
+*   **Caching**: The frontend implements client-side caching for the transactions list using ETags. It stores the ETag and the transactions data in `localStorage` and sends the `If-None-Match` header in subsequent requests. Static files in production use build timestamps for `Last-Modified` headers, enabling proper HTTP caching.
 
 #### CSS Architecture
 

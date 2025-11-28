@@ -46,10 +46,14 @@ func LoggerMiddleware(next http.Handler) http.Handler {
 
 var (
 	GitCommit = "-"
+	BuildTime = "-"
 )
 
 func main() {
-	log.Printf("Init %s\n", GitCommit)
+	log.Printf("Init %s (built: %s)\n", GitCommit, BuildTime)
+
+	// Set the build time in the server package for use in route handlers
+	server.BuildTime = BuildTime
 
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")

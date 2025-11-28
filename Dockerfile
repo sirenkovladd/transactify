@@ -18,8 +18,9 @@ COPY cli cli
 # RUN ls -la & sleep 12
 COPY --from=client /app/dist ./dist
 ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
 ENV GOCACHE=/go-build-cache
-RUN --mount=type=cache,target=/go-build-cache go build -ldflags "-s -w -X 'main.GitCommit=$GIT_COMMIT'" -tags prod -o /app/app ./cli/server/server.go
+RUN --mount=type=cache,target=/go-build-cache go build -ldflags "-s -w -X 'main.GitCommit=$GIT_COMMIT' -X 'main.BuildTime=$BUILD_TIME'" -tags prod -o /app/app ./cli/server/server.go
 
 # Stage 3: Final image
 FROM gcr.io/distroless/static-debian12

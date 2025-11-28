@@ -1,7 +1,9 @@
 package route
 
 import (
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -92,9 +94,25 @@ func (db WithDB) GetTransactions(w http.ResponseWriter, r *http.Request, userId 
 		}
 		transactions = append(transactions, t)
 	}
-	http.Header.Add(w.Header(), "Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(transactions)
+	// Serialize transactions to JSON
+	data, err := json.Marshal(transactions)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error marshaling transactions: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
+
+	// Calculate ETag
+	hash := md5.Sum(data)
+	etag := fmt.Sprintf(`"%x"`, hash)
+
+	// Check If-None-Match header
+	if match := r.Header.Get("If-None-Match"); match == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("ETag", etag)
+	w.Write(data)
 }
