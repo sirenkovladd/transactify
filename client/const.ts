@@ -129,6 +129,8 @@ export const categoriesMap = {
 	sports: ["CLASSPASS"],
 	"bc hydro": ["HYDRO"],
 	insurance: ["DUUO"],
+	hobbies: ["Indigo"],
+	extra: [],
 	unknown: [],
 };
 
