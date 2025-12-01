@@ -127,6 +127,8 @@ export const categoriesMap = {
 	visa: ["IMMIGRATION"],
 	volleyball: ["Volleyball"],
 	sports: ["CLASSPASS"],
+	"bc hydro": ["HYDRO"],
+	insurance: ["DUUO"],
 	unknown: [],
 };
 
