@@ -183,6 +183,7 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 		.map((item) => {
 			const node = item.node;
 			if (["CREDIT_CARD_PAYMENT", "DEPOSIT"].includes(node.type)) {
+				console.log("skip 1", node);
 				return null;
 			}
 			let amount = parseFloat(node.amount);
@@ -204,6 +205,7 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 				(node.type === "INTEREST" && "Interest") ||
 				(node.type === "REIMBURSEMENT" && "Cashback");
 			if (!merchant) {
+				console.log("skip 2", node);
 				return null;
 			}
 			const category = getCategory(merchant);
