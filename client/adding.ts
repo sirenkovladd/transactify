@@ -117,8 +117,9 @@ function parseCIBC(data: string): ParsedImportRow[] {
 	return payload
 		.filter((e) => e.descriptionLine1 !== "PAYMENT THANK YOU/PAIEMEN")
 		.map((item) => {
-			const merchant =
-				item.descriptionLine1 || item.transactionDescription || "";
+			const merchant = item.descriptionLine1.includes("E-TRANSFER")
+				? item.descriptionLine2
+				: item.descriptionLine1 || item.transactionDescription || "";
 			const categoryFromMap = getCategory(merchant);
 			const category =
 				categoryFromMap && categoryFromMap !== "unknown"
