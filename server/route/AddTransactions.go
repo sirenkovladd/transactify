@@ -40,7 +40,7 @@ func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request, userId 
 	for _, t := range payload {
 		var transactionID int64
 		err := tx.QueryRow(
-			"INSERT INTO transactions (amount, currency, occurred_at, merchant, user_id, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, merchant, occurred_at) DO UPDATE SET amount = EXCLUDED.amount, category = EXCLUDED.category, card = EXCLUDED.card, details = CASE WHEN EXCLUDED.details IS NOT NULL AND EXCLUDED.details <> '' THEN EXCLUDED.details ELSE transactions.details END RETURNING transaction_id",
+			"INSERT INTO transactions (amount, currency, occurred_at, merchant, user_id, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, merchant, occurred_at, amount) DO UPDATE SET category = EXCLUDED.category, card = EXCLUDED.card, details = CASE WHEN EXCLUDED.details IS NOT NULL AND EXCLUDED.details <> '' THEN EXCLUDED.details ELSE transactions.details END RETURNING transaction_id",
 			t.Amount, t.Currency, t.OccurredAt, t.Merchant, userId, t.Card, t.Category, t.Details,
 		).Scan(&transactionID)
 		if err != nil {

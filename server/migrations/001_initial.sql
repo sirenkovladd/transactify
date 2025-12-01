@@ -191,7 +191,7 @@ ALTER TABLE ONLY public.transactions
 --
 
 ALTER TABLE ONLY public.transactions
-    ADD CONSTRAINT unique_merchant_time UNIQUE (merchant, occurred_at, user_id);
+    ADD CONSTRAINT unique_merchant_time UNIQUE (merchant, occurred_at, user_id, amount);
 
 
 --

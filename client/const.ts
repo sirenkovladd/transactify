@@ -61,6 +61,7 @@ export const categoriesMap = {
 		"Sq *Thierry Mt. Pleasant",
 		"Holy Eucharist Cathed",
 		"KOZAK",
+		"UBEREATS",
 	],
 	transportation: [
 		"LYFT",
@@ -81,6 +82,7 @@ export const categoriesMap = {
 		"SP KOTN",
 		"TOFINO PHARMACY",
 		"Lamaisonsimons",
+		"STITCHERS",
 	],
 	health: ["COASTAL EYE CLINIC"],
 	"home goods": [
@@ -95,7 +97,7 @@ export const categoriesMap = {
 		"The Best Shop",
 		"Popeyes",
 	],
-	toiletries: [],
+	toiletries: ["SEPHORA", "Lush"],
 	presents: [
 		"PET VALU CANADA INC.",
 		"APPLE.COM/CA",
@@ -122,8 +124,9 @@ export const categoriesMap = {
 	taxAccountant: ["LILICO"],
 	film: ["Amazon Channels", "PrimeVideo"],
 	hotel: ["Hotel at"],
-	visa: [],
+	visa: ["IMMIGRATION"],
 	volleyball: ["Volleyball"],
+	sports: ["CLASSPASS"],
 	unknown: [],
 };
 
