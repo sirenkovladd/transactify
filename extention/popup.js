@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentSiteSpan = document.getElementById('current-site');
   const findCardsButton = document.getElementById('findCardsButton');
   const fetchTransactionsButton = document.getElementById('fetchTransactionsButton');
+  const fetchAmountInput = document.getElementById('fetchAmount');
 
   let currentTab = null;
   let currentSite = '';
@@ -171,8 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
    * ----- Transaction Fetching Logic -----
    */
 
-  async function fetchWealthsimpleTransactions(card, auth, cursor = null, allTransactions = []) {
-    showStatus(`Fetching from ${card.name}... (${allTransactions.length} found)`);
+  async function fetchWealthsimpleTransactions(card, auth, limit, cursor = null, allTransactions = []) {
+    const remaining = limit - allTransactions.length;
+    if (remaining <= 0) return allTransactions;
+
+    const pageSize = Math.min(remaining, 100);
+
+    showStatus(`Fetching from ${card.name}... (${allTransactions.length}/${limit} found)`);
     const response = await fetch("https://my.wealthsimple.com/graphql", {
       method: "POST",
       headers: auth.headers,
@@ -180,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         operationName: "FetchActivityFeedItems",
         variables: {
           orderBy: "OCCURRED_AT_DESC",
-          first: 20,
+          first: pageSize,
           cursor: cursor,
           condition: {
             endDate: new Date().toISOString(),
@@ -201,9 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const { edges, pageInfo } = data.activityFeedItems;
     allTransactions.push(...edges);
 
-    // if (pageInfo.hasNextPage) {
-    //   return fetchWealthsimpleTransactions(card, auth, pageInfo.endCursor, allTransactions);
-    // }
+    if (pageInfo.hasNextPage && allTransactions.length < limit) {
+      return fetchWealthsimpleTransactions(card, auth, limit, pageInfo.endCursor, allTransactions);
+    }
     return allTransactions;
   }
 
@@ -251,10 +257,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let allFetchedTransactions = [];
+      const fetchLimit = parseInt(fetchAmountInput.value) || 20;
+
       for (const card of selectedCards) {
         let transactions = [];
         if (card.site.includes('wealthsimple.com')) {
-          transactions = await fetchWealthsimpleTransactions(card, authResponse.auth);
+          transactions = await fetchWealthsimpleTransactions(card, authResponse.auth, fetchLimit);
         } else if (card.site.includes('cibc.com')) {
           showStatus(`Fetching for CIBC's ${card.name} is not implemented yet.`, 'warn');
           // transactions = await fetchCibcTransactions(card, authResponse.auth);
