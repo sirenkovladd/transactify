@@ -136,6 +136,7 @@ export const categoriesMap = {
 	insurance: ["DUUO"],
 	hobbies: ["Indigo", "THE LAB VANCOUVER"],
 	banking: [],
+	preply: ["Preply"],
 	sauna: [],
 	extra: [],
 	unknown: [],
