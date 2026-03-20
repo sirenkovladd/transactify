@@ -24,6 +24,7 @@ export const categoriesMap = {
 		"SQ *OH SWEET DAY BAKE SH",
 		"Body Energy Club",
 		"Aburi Market",
+		"Safeway",
 	],
 	takeouts: [
 		"BIG DADDY'S FISH FRY",
@@ -64,6 +65,8 @@ export const categoriesMap = {
 		"UBEREATS",
 		"Ellipsis",
 		"Cafe Lokal",
+		"Tim Hortons",
+		"Coffee",
 	],
 	transportation: [
 		"LYFT",
