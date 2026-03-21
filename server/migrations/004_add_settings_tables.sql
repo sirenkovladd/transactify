@@ -1,12 +1,19 @@
-import { categoryRules } from "./common.ts";
+CREATE TABLE IF NOT EXISTS public.settings (
+    key character varying(255) NOT NULL PRIMARY KEY,
+    value jsonb NOT NULL,
+    updated_at timestamp with time zone DEFAULT now()
+);
 
-export const defaultCategoriesMap = {
+-- Seed with current data
+-- Note: Categories from client/const.ts seem more complete than src/common.go
+INSERT INTO public.settings (key, value) VALUES
+('categories_map', '{
 	"mobile internet": ["KOODO AIRTIME", "KOODO MOBILE"],
-	internet: ["NOVUS"],
+	"internet": ["NOVUS"],
 	"food & other": [
 		"SAVE ON FOODS",
 		"URBAN FARE",
-		"NOFRILLS JOTI'S",
+		"NOFRILLS JOTI''S",
 		"BC LIQUOR",
 		"LENA MARKET",
 		"WHOLE FOODS",
@@ -26,10 +33,10 @@ export const defaultCategoriesMap = {
 		"SQ *OH SWEET DAY BAKE SH",
 		"Body Energy Club",
 		"Aburi Market",
-		"Safeway",
+		"Safeway"
 	],
-	takeouts: [
-		"BIG DADDY'S FISH FRY",
+	"takeouts": [
+		"BIG DADDY''S FISH FRY",
 		"STARBUCKS",
 		"LA DIPERIE",
 		"MR. SUSHI MAIN STREET",
@@ -68,9 +75,9 @@ export const defaultCategoriesMap = {
 		"Ellipsis",
 		"Cafe Lokal",
 		"Tim Hortons",
-		"Coffee",
+		"Coffee"
 	],
-	transportation: [
+	"transportation": [
 		"LYFT",
 		"COMPASS WEB",
 		"UBER",
@@ -81,9 +88,9 @@ export const defaultCategoriesMap = {
 		"BCF - ONLINE SALES",
 		"BC, SPIRIT OF",
 		"BCF-CUSTOMER SERVICE CENT",
-		"Bolt",
+		"Bolt"
 	],
-	clothes: [
+	"clothes": [
 		"Bailey Nelson",
 		"THE ROCKIN COWBOY",
 		"WINNERSHOMESENSE",
@@ -92,9 +99,9 @@ export const defaultCategoriesMap = {
 		"Lamaisonsimons",
 		"STITCHERS",
 		"HM CA",
-		"BABATON",
+		"BABATON"
 	],
-	health: ["COASTAL EYE CLINIC"],
+	"health": ["COASTAL EYE CLINIC"],
 	"home goods": [
 		"CANADIAN TIRE",
 		"YOUR DOLLAR STORE",
@@ -105,70 +112,63 @@ export const defaultCategoriesMap = {
 		"HCM*CARSON BOOKS INC",
 		"Smart N Save",
 		"The Best Shop",
-		"Popeyes",
+		"Popeyes"
 	],
-	toiletries: ["SEPHORA", "Lush"],
-	presents: [
+	"toiletries": ["SEPHORA", "Lush"],
+	"presents": [
 		"PET VALU CANADA INC.",
 		"APPLE.COM/CA",
 		"SP DBCANADA",
-		"BLUMEN FLORALS",
+		"BLUMEN FLORALS"
 	],
-	haircut: ["BARBER", "HAIR"],
-	donations: [],
-	therapy: [],
-	english: [],
-	subscriptions: ["Hetzner Online Gmbh"],
-	french: [],
-	events: [
+	"haircut": ["BARBER", "HAIR"],
+	"donations": [],
+	"therapy": [],
+	"english": [],
+	"subscriptions": ["Hetzner Online Gmbh"],
+	"french": [],
+	"events": [
 		"TICKETLEADER",
 		"SEATGEEK TICKETS",
 		"ROYAL BC MUSEUM",
 		"FOX CABARET",
 		"BOUNCE* TICKET",
 		"Cineplex",
-		"Eventbrite",
+		"Eventbrite"
 	],
-	travel: ["VIA RAIL/ZAW99N", "AIR CAN*", "BOOKING.COM", "Wb E-Store"],
+	"travel": ["VIA RAIL/ZAW99N", "AIR CAN*", "BOOKING.COM", "Wb E-Store"],
 	"london drugs": ["LONDON DRUGS", "SHOPPERS DRUG"],
-	taxAccountant: ["LILICO"],
-	film: ["Amazon Channels", "PrimeVideo", "NETFLIX"],
-	hotel: ["Hotel at"],
-	visa: ["IMMIGRATION"],
-	volleyball: ["Volleyball", "Vancouver Pb Recreatio"],
-	sports: ["CLASSPASS", "HARBOUR DANCE CENTRE", "MODO YOGA"],
+	"taxAccountant": ["LILICO"],
+	"film": ["Amazon Channels", "PrimeVideo", "NETFLIX"],
+	"hotel": ["Hotel at"],
+	"visa": ["IMMIGRATION"],
+	"volleyball": ["Volleyball", "Vancouver Pb Recreatio"],
+	"sports": ["CLASSPASS", "HARBOUR DANCE CENTRE", "MODO YOGA"],
 	"bc hydro": ["HYDRO"],
-	insurance: ["DUUO"],
-	hobbies: ["Indigo", "THE LAB VANCOUVER"],
-	banking: [],
-	preply: ["Preply"],
-	amazon: ["AMAZON.CA"],
-	sauna: [],
-	extra: [],
-	unknown: [],
-};
-
-export const categoriesMap = new Proxy({} as any, {
-	get(_, prop: string) {
-		return (
-			categoryRules.val[prop] || (defaultCategoriesMap as any)[prop] || []
-		);
-	},
-	ownKeys() {
-		return Array.from(
-			new Set([
-				...Object.keys(categoryRules.val),
-				...Object.keys(defaultCategoriesMap),
-			]),
-		);
-	},
-	getOwnPropertyDescriptor(target, prop) {
-		return {
-			enumerable: true,
-			configurable: true,
-		};
-	},
-});
-
-export type Categories = keyof typeof defaultCategoriesMap;
-
+	"insurance": ["DUUO"],
+	"hobbies": ["Indigo", "THE LAB VANCOUVER"],
+	"banking": [],
+	"preply": ["Preply"],
+	"amazon": ["AMAZON.CA"],
+	"sauna": [],
+	"extra": [],
+	"unknown": []
+}'),
+('subgroup_map', '{
+	"parking spot": "rent",
+	"tenant insurance": "rent",
+	"bc hydro": "rent",
+	"internet": "rent",
+	"movies": "subscriptions",
+	"london drugs": "toiletries",
+	"vlad": "sports",
+	"dental": "health",
+	"film": "hobbies",
+	"books": "hobbies",
+	"english": "studies",
+	"french": "studies",
+	"preply": "studies",
+	"interest": "banking",
+	"hotel": "travel"
+}')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;

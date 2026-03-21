@@ -2,6 +2,7 @@ import van from "vanjs-core";
 import {
 	NewTransactionModal,
 	ScanReceiptModal,
+	SettingsModal,
 	setupAdding,
 } from "./adding.ts";
 import { CategoryModal, openCategoryModal } from "./category.ts";
@@ -263,6 +264,7 @@ function mainInit() {
 		SharingModal(),
 		NewTransactionModal(),
 		ScanReceiptModal(),
+		SettingsModal(),
 		...setupAdding(),
 	);
 

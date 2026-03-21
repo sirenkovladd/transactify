@@ -1,0 +1,17 @@
+{
+	"parking spot": "rent",
+	"tenant insurance": "rent",
+	"bc hydro": "rent",
+	"internet": "rent",
+	"movies": "subscriptions",
+	"london drugs": "toiletries",
+	"vlad": "sports",
+	"dental": "health",
+	"film": "hobbies",
+	"books": "hobbies",
+	"english": "studies",
+	"french": "studies",
+	"preply": "studies",
+	"interest": "banking",
+	"hotel": "travel"
+}

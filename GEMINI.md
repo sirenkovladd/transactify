@@ -86,16 +86,23 @@ To build and run the frontend, you will need to have Node.js and bun installed.
     *   Global body styles
     *   Shared modal components
     *   Common button styles
-*   **Import Pattern**: Each component TypeScript file imports its CSS at the top:
     ```typescript
     import "./component-name.css";
     ```
 
+#### Dynamic Configuration
+The application supports runtime configuration of category rules and subgroup mappings via the database.
+*   **Settings Table**: Stores JSON configurations in a `settings` table.
+*   **Key-Value Store**: Current keys include `categories_map` and `subgroup_map`.
+*   **UI Management**: Users can update these settings through the "Settings" menu in the creation sidebar by pasting a new JSON file.
+*   **Git Backup**: Current configurations are also stored in `data/categories_map.json` and `data/subgroup_map.json` for version control and easy recovery.
+*   **Fallback**: If database settings are unavailable, the application falls back to hardcoded defaults in `client/const.ts` and `client/group.ts`.
+
 ### Database
 
-*   The database schema is defined in the `schema.sql` file.
+*   The database schema is defined in the `server/migrations/` directory.
 *   The application uses a PostgreSQL database.
-*   The database schema includes tables for users, sessions, transactions, and tags.
+*   The database schema includes tables for users, sessions, transactions, tags, and settings.
 
 ## Documentation Maintenance
 

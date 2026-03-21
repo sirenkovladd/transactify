@@ -122,6 +122,13 @@ func getFileSystem() http.FileSystem {
 	return http.Dir("./dist")
 }
 
+func artificialDelay(delay time.Duration, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(delay)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (db WithDB) GetMux() http.Handler {
 	mux := http.NewServeMux()
 	a := db.AuthMiddleware
@@ -144,8 +151,10 @@ func (db WithDB) GetMux() http.Handler {
 	mux.Handle("/api/sharing/tokens", a(db.GetSharingTokens))
 	mux.Handle("/api/sharing/subscriptions", a(db.GetSubscriptions))
 	mux.Handle("/api/sharing/unsubscribe", a(db.Unsubscribe))
+	mux.Handle("GET /api/settings", a(db.GetSettings))
+	mux.Handle("POST /api/settings", a(db.UpdateSetting))
 	mux.Handle("/api/logout", a(db.Logout))
 	mux.Handle("/", http.FileServer(getFileSystem()))
 
-	return mux
+	return artificialDelay(500*time.Millisecond, mux)
 }

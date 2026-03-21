@@ -96,7 +96,9 @@ async function manageGroupTags(
 	}
 }
 
-const subGroupMap: Record<string, string> = {
+import { subGroupMap as subGroupMapState } from "./common.ts";
+
+const defaultSubGroupMap: Record<string, string> = {
 	'parking spot': 'rent',
 	'tenant insurance': 'rent',
 	'bc hydro': 'rent',
@@ -111,7 +113,15 @@ const subGroupMap: Record<string, string> = {
 	'french': 'studies',
 	'preply': 'studies',
 	'interest': 'banking',
+	'hotel': 'travel'
 };
+
+const subGroupMap = new Proxy({} as any, {
+	get(_, prop: string) {
+		return subGroupMapState.val[prop] || defaultSubGroupMap[prop];
+	}
+});
+
 
 function getSubGroupName(group: string): string {
 	const normalizedGroup = group.trim().toLowerCase();

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dynamic categories rules and subgroup mappings stored in the database.
+- Settings modal in the UI to update these configurations via JSON upload.
+- Git-tracked JSON versions of category rules and subgroup mappings in `data/`.
+
 - Import transactions from browser extension
 - Auto-suggestion for merchant names in transaction popup
 - Sorting functionality in grouped view
@@ -17,8 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show tags in edit form immediately
 - Client-side caching for transactions list using ETags
 - Build timestamp for static file caching with Last-Modified headers
+- Input for specifying number of transactions to fetch in browser extension popup
+
 
 ### Changed
+
+- Refactored `categoriesMap` and `subGroupMap` to pull from the database while maintaining hardcoded defaults as fallbacks.
+- Moved categories and subgroup configuration from code to a more maintainable, runtime-updatable system.
 
 - Refactored CSS into modular component-specific files
 - Improved transaction popup UI and layout

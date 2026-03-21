@@ -1,6 +1,5 @@
 import van from "vanjs-core";
 import "./common.css";
-import { categoriesMap } from "./const";
 import type { GroupedTransactions } from "./group";
 import { openTransactionModal } from "./popup";
 
@@ -58,7 +57,10 @@ const amountMax = params.get("amountMax");
 let maxAmountTransaction = amountMax ? Number(amountMax) : 0;
 
 export const transactions = van.state<Transaction[]>([]);
-export const categories = van.state<string[]>(Object.keys(categoriesMap));
+export const categoryRules = van.state<Record<string, string[]>>({});
+export const subGroupMap = van.state<Record<string, string>>({});
+
+export const categories = van.derive(() => Object.keys(categoryRules.val));
 export const categoriesFromTransaction = van.derive(() => [
 	...new Set(transactions.val.map((t) => t.category)),
 ]);
@@ -178,6 +180,43 @@ export const filteredTransactions = van.derive(() => {
 	});
 });
 
+export async function fetchSettings() {
+	if (!token.val) return;
+	try {
+		const response = await fetch("/api/settings", {
+			headers: { Authorization: `Bearer ${token.val}` },
+		});
+		if (response.ok) {
+			const data = await response.json();
+			if (data.categories_map) categoryRules.val = data.categories_map;
+			if (data.subgroup_map) subGroupMap.val = data.subgroup_map;
+		}
+	} catch (e) {
+		console.error("Failed to fetch settings", e);
+	}
+}
+
+export async function updateSetting(key: string, value: any) {
+	if (!token.val) return;
+	try {
+		const response = await fetch(`/api/settings?key=${key}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token.val}`,
+			},
+			body: JSON.stringify(value),
+		});
+		if (response.ok) {
+			await fetchSettings();
+		} else {
+			throw new Error("Failed to update setting");
+		}
+	} catch (e: any) {
+		error.val = e.message;
+	}
+}
+
 export async function fetchTransactions() {
 	if (!token.val) {
 		transactions.val = [];
@@ -252,8 +291,9 @@ export async function fetchTransactions() {
 	}
 }
 
-van.derive(() => {
+van.derive(async () => {
 	if (loggedIn.val) {
+		await fetchSettings();
 		fetchTransactions();
 	}
 });

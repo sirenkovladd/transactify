@@ -8,7 +8,12 @@ import {
 	type NewTransaction,
 	transactions,
 } from "./common.ts";
-import { type Categories, categoriesMap } from "./const.ts";
+import {
+	categoryRules,
+	subGroupMap,
+	updateSetting,
+} from "./common.ts";
+import { type Categories, defaultCategoriesMap } from "./const.ts";
 
 const { div, span, p, input, button, option, select, textarea, label, a } =
 	van.tags;
@@ -158,7 +163,15 @@ function parseCIBC(data: string): ParsedImportRow[] {
 }
 
 function getCategory(merchant: string): Categories {
-	for (const [category, merchants] of Object.entries(categoriesMap)) {
+	for (const [category, merchants] of Object.entries(categoryRules.val)) {
+		for (const pattern of merchants) {
+			if (merchant.toLowerCase().includes(pattern.toLowerCase())) {
+				return category as Categories;
+			}
+		}
+	}
+	// Fallback to defaults if not found in dynamic rules
+	for (const [category, merchants] of Object.entries(defaultCategoriesMap)) {
 		for (const pattern of merchants) {
 			if (merchant.toLowerCase().includes(pattern.toLowerCase())) {
 				return category as Categories;
@@ -716,7 +729,80 @@ export function ScanReceiptModal() {
 const openNewTransactionModal = van.state(false);
 const openScanReceiptModal = van.state(false);
 const openImportModal = van.state(false);
+const openSettingsModal = van.state(false);
 const externalImportData = van.state<ParsedImportRow[] | null>(null);
+
+export function SettingsModal() {
+	const active = van.state<"categories_map" | "subgroup_map">("categories_map");
+	const jsonInput = van.state("");
+
+	van.derive(() => {
+		const val =
+			active.val === "categories_map" ? categoryRules.val : subGroupMap.val;
+		jsonInput.val = JSON.stringify(val, null, 2);
+	});
+
+	const closeModal = () => {
+		openSettingsModal.val = false;
+	};
+
+	const saveSettings = async () => {
+		try {
+			const parsed = JSON.parse(jsonInput.val);
+			await updateSetting(active.val, parsed);
+			alert("Settings updated successfully!");
+		} catch (e) {
+			console.error(e);
+			alert("Failed to update settings. Make sure it is a valid JSON.");
+		}
+	};
+
+	return () => {
+		if (!openSettingsModal.val) return "";
+
+		return div(
+			{
+				class: "modal",
+				style: "display: block;",
+				onclick: (e) => {
+					if (e.target === e.currentTarget) closeModal();
+				},
+			},
+			div(
+				{ class: "modal-content settings-modal" },
+				span({ class: "close-button", onclick: closeModal }, "×"),
+				van.tags.h3("Manage Settings"),
+				div(
+					{ class: "tab-container" },
+					(["categories_map", "subgroup_map"] as const).map((type) =>
+						div(
+							{
+								class: () => `tab${active.val === type ? " active" : ""}`,
+								onclick: () => {
+									active.val = type;
+								},
+							},
+							type === "categories_map" ? "Categories" : "Subgroups",
+						),
+					),
+				),
+				textarea({
+					class: "settings-json-input",
+					value: jsonInput,
+					oninput: (e: Event) => {
+						jsonInput.val = (e.target as HTMLTextAreaElement).value;
+					},
+					placeholder: "Paste new JSON here...",
+					style: "width: 100%; height: 300px; font-family: monospace; margin: 10px 0; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ddd;",
+				}),
+				div(
+					{ class: "modal-footer" },
+					button({ class: "apply-btn", onclick: saveSettings }, "Save Changes"),
+				),
+			),
+		);
+	};
+}
 
 export function setupAdding() {
 	const urlParams = new URLSearchParams(window.location.search);
@@ -919,18 +1005,19 @@ export function setupAdding() {
 						{
 							id: "sharing-btn",
 							onclick: () => {
-								// This needs to be wired up to openSharingModal from sharing.ts
-								// But we can't import it here directly if it creates a cycle?
-								// Actually, sharing.ts imports common.ts, adding.ts imports common.ts.
-								// We can dispatch an event or use a shared state.
-								// Or we can just export the open function and import it in main.ts and pass it down?
-								// Or simpler: main.ts handles the button click?
-								// But the button is created here.
-								// Let's use a custom event for now to avoid circular deps if any.
 								window.dispatchEvent(new CustomEvent("open-sharing-modal"));
 							},
 						},
 						"Sharing",
+					),
+					a(
+						{
+							id: "settings-btn",
+							onclick: () => {
+								openSettingsModal.val = true;
+							},
+						},
+						"Settings",
 					),
 				),
 				button(
