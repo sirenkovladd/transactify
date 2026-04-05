@@ -3,14 +3,12 @@ import "./adding.css";
 import {
 	addTransactions,
 	categories,
+	categoryRules,
 	getDateStr,
 	loggedIn,
 	type NewTransaction,
-	transactions,
-} from "./common.ts";
-import {
-	categoryRules,
 	subGroupMap,
+	transactions,
 	updateSetting,
 } from "./common.ts";
 import { type Categories, defaultCategoriesMap } from "./const.ts";
@@ -121,6 +119,7 @@ function parseCIBC(data: string): ParsedImportRow[] {
 
 	return payload
 		.filter((e) => e.descriptionLine1 !== "PAYMENT THANK YOU/PAIEMEN")
+		.filter((e) => e.pendingIndicator !== true)
 		.map((item) => {
 			const merchant = item.descriptionLine1.includes("E-TRANSFER")
 				? item.descriptionLine2
@@ -190,10 +189,12 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 			spendMerchant?: string;
 			eTransferName?: string;
 			type: string;
+			unifiedStatus: string; // "PENDING", "COMPLETED"
 		};
 	}[];
 
 	return payload
+		.filter((e) => e.node.unifiedStatus !== "PENDING")
 		.map((item) => {
 			const node = item.node;
 			if (["CREDIT_CARD_PAYMENT", "DEPOSIT"].includes(node.type)) {
@@ -321,10 +322,10 @@ function renderParsedTransactions(
 			const cardInput = card
 				? null
 				: input({
-						type: "text",
-						value: item.card ?? "",
-						class: "import-card-input",
-					});
+					type: "text",
+					value: item.card ?? "",
+					class: "import-card-input",
+				});
 			const datetimeInput = input({
 				type: "datetime-local",
 				value: item.datetime,
@@ -353,13 +354,13 @@ function renderParsedTransactions(
 						{ class: "import-actions" },
 						isDup
 							? span(
-									{
-										class: "import-duplicate-label",
-										title:
-											"This transaction already exists and will be skipped on import.",
-									},
-									"Already exists",
-								)
+								{
+									class: "import-duplicate-label",
+									title:
+										"This transaction already exists and will be skipped on import.",
+								},
+								"Already exists",
+							)
 							: null,
 						button(
 							{
@@ -410,10 +411,10 @@ function renderParsedTransactions(
 					const cardValue = card
 						? card
 						: (
-								row.querySelector(
-									".import-card-input",
-								) as HTMLInputElement | null
-							)?.value || "";
+							row.querySelector(
+								".import-card-input",
+							) as HTMLInputElement | null
+						)?.value || "";
 					const tagsValue =
 						(row.querySelector(".import-tags-input") as HTMLInputElement)
 							?.value || "";
@@ -489,10 +490,10 @@ function renderParsedTransactions(
 					const cardValue = card
 						? card
 						: (
-								row.querySelector(
-									".import-card-input",
-								) as HTMLInputElement | null
-							)?.value || "";
+							row.querySelector(
+								".import-card-input",
+							) as HTMLInputElement | null
+						)?.value || "";
 
 					const csvRow = [
 						datetime,
@@ -951,11 +952,11 @@ export function setupAdding() {
 				div({ id: "parsed-transactions-container" }, () =>
 					parsedDataState.val.length > 0
 						? renderParsedTransactions(
-								parsedDataState.val,
-								undefined,
-								openImportModal,
-								existing,
-							)
+							parsedDataState.val,
+							undefined,
+							openImportModal,
+							existing,
+						)
 						: "",
 				),
 			),
