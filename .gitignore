@@ -33,3 +33,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Finder (MacOS) folder config
 .DS_Store
 *.pem
+
+# plans and skill artifacts (kept in the worktree, not in main)
+docs/superpowers/
