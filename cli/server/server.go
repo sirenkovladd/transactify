@@ -1,18 +1,15 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"code.sirenko.ca/transaction/server"
 	"code.sirenko.ca/transaction/server/route"
-
-	_ "github.com/lib/pq"
+	"code.sirenko.ca/transaction/store"
 )
 
 type loggingResponseWriter struct {
@@ -55,41 +52,30 @@ func main() {
 	// Set the build time in the server package for use in route handlers
 	server.BuildTime = BuildTime
 
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	dbname := os.Getenv("POSTGRES_DB")
-	dbport := os.Getenv("POSTGRES_PORT")
-	if dbport == "" {
-		dbport = "5432"
+	path := os.Getenv("BBOLT_PATH")
+	if path == "" {
+		path = "./data/transaction.db"
 	}
-	db_host := os.Getenv("POSTGRES_HOST")
-	connStr := fmt.Sprintf(
-		"user=%s password='%s' host=%s port=%s dbname=%s sslmode=disable",
-		user,
-		strings.ReplaceAll(password, "'", "\\'"),
-		db_host,
-		dbport,
-		dbname,
-	)
-	db, err := sql.Open("postgres", connStr)
+	s, err := store.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer s.Close()
 
-	server.ApplyMigrations(db)
+	if err := server.ApplyMigrationsBbolt(s); err != nil {
+		log.Fatal(err)
+	}
 
-	router := route.NewWithDB(db)
+	router := route.NewWithStore(s)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
 	log.Printf("listening on :%s...", port)
+	log.Printf("using bbolt at %s", path)
 
 	protocol := os.Getenv("PROTOCOL")
-
 	switch protocol {
 	case "", "http":
 		err = http.ListenAndServe(fmt.Sprintf(":%s", port), LoggerMiddleware(router.GetMux()))

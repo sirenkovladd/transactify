@@ -4,7 +4,7 @@
 
 This project is a web application for managing personal transactions. It allows users to track their expenses, categorize them, and view statistics about their spending.
 
-The application is built with a Go backend and a TypeScript/JavaScript frontend. The backend provides a REST API for managing transactions, and the frontend is a single-page application that uses the `vanjs-core` library for the UI. The application uses a PostgreSQL database to store the data.
+The application is built with a Go backend and a TypeScript/JavaScript frontend. The backend provides a REST API for managing transactions, and the frontend is a single-page application that uses the `vanjs-core` library for the UI. The application uses an embedded [bbolt](https://pkg.go.dev/go.etcd.io/bbolt) (go.etcd.io/bbolt) key/value store for persistence; data lives in a single file on disk.
 
 The project also includes command-line tools for creating users and importing transactions from Wealthsimple.
 
@@ -12,16 +12,11 @@ The project also includes command-line tools for creating users and importing tr
 
 ### Backend
 
-To run the backend server, you will need to have Go and PostgreSQL installed.
+To run the backend server, you will need to have Go installed. No external database service is required.
 
-1.  **Set up the database:**
-    *   Create a PostgreSQL database.
-    *   Run the `schema.sql` file to create the necessary tables.
-    *   Set the following environment variables:
-        *   `POSTGRES_USER`: Your PostgreSQL username.
-        *   `POSTGRES_PASSWORD`: Your PostgreSQL password.
-        *   `POSTGRES_DB`: The name of your PostgreSQL database.
-        *   `POSTGRES_HOST`: The host of your PostgreSQL database.
+1.  **Configure the bbolt file location:**
+    *   `BBOLT_PATH`: Path to the bbolt data file. Defaults to `./data/transaction.db`. The parent directory is created on first run.
+    *   The first start runs the Go-based migrations in `server/migrations_bbolt/` to create the required buckets.
 
 2.  **Run the server:**
     ```bash
@@ -53,8 +48,8 @@ To build and run the frontend, you will need to have Node.js and bun installed.
 
 *   The backend is written in Go.
 *   The backend uses the standard Go project layout.
-*   The backend uses the `net/http` package for the HTTP server and the `database/sql` package for database access.
-*   The backend uses the `github.com/lib/pq` driver for PostgreSQL.
+*   The backend uses the `net/http` package for the HTTP server and the `go.etcd.io/bbolt` package for embedded key/value storage.
+*   Database access is centralized in the `store` package (`store/store.go` plus one file per table: `users.go`, `sessions.go`, `tags.go`, `transactions.go`, `transaction_tags.go`, `transaction_photos.go`, `sharing.go`, `settings.go`). Route handlers depend on `*store.Store`, not on a SQL driver.
 
 ### Frontend
 
@@ -100,9 +95,19 @@ The application supports runtime configuration of category rules and subgroup ma
 
 ### Database
 
-*   The database schema is defined in the `server/migrations/` directory.
-*   The application uses a PostgreSQL database.
-*   The database schema includes tables for users, sessions, transactions, tags, and settings.
+*   The database is a single bbolt file whose path is the `BBOLT_PATH` environment variable (default `./data/transaction.db`).
+*   Migrations are Go functions under `server/migrations_bbolt/`, registered in lexicographic order in `registry.go` and applied by `server.ApplyMigrationsBbolt`. Already-applied versions are recorded in the `meta` bucket.
+*   The schema is encoded as a set of bbolt buckets, one per table plus secondary indexes and per-table sequence buckets. Key shapes:
+    *   `users` / `users_by_username` — `itob(user_id)` and `username` keys, JSON values.
+    *   `sessions` — `session_code` keys, JSON values; `GetSessionByCode` bumps `last_used` on every read.
+    *   `tags` / `tags_by_id` — keyed by name and id respectively.
+    *   `transactions` / `txn_by_user_time` — primary `itob(transaction_id)` and a composite `(itob(user_id) + itob(occurred_at_unix_nano) + itob(transaction_id))` index for per-user ordered range scans (built via `store.TxByUserTimeKey`).
+    *   `txn_tags` — `(itob(transaction_id), itob(tag_id))` join rows.
+    *   `txn_photos` / `photos_by_path` — primary by `photo_id` and a secondary index for delete-by-path lookups.
+    *   `sharing_tokens` / `sharing_tokens_by_user` — token lookup and per-user listing.
+    *   `user_connections` / `subscriptions_by_user` — primary and reverse indexes.
+    *   `settings` — key → `{value: json.RawMessage, updated_at}` JSON.
+*   Migrations and dump/load tooling are part of the binary; the `cli/migrate` package is a one-shot tool that copies data from a live PostgreSQL instance into a fresh bbolt file for the cutover (see `docs/runbooks/migrate-to-bbolt.md`).
 
 ## Documentation Maintenance
 

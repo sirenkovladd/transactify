@@ -1,12 +1,13 @@
 package route
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"code.sirenko.ca/transaction/src"
+	"code.sirenko.ca/transaction/store"
 )
 
 type LoginPayload struct {
@@ -15,12 +16,12 @@ type LoginPayload struct {
 }
 
 type User struct {
-	ID           int
+	ID           uint64
 	Username     string
 	HashPassword string
 }
 
-func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
+func (h WithStore) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -33,9 +34,9 @@ func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := &User{}
-	err := db.db.QueryRow("SELECT user_id, username, hash_password FROM users WHERE username = $1", payload.Username).Scan(&user.ID, &user.Username, &user.HashPassword)
+	dbUser, err := h.s.GetUserByUsername(payload.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == store.ErrNotFound {
 			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 			return
 		}
@@ -43,6 +44,9 @@ func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to query database", http.StatusInternalServerError)
 		return
 	}
+	user.ID = dbUser.ID
+	user.Username = dbUser.Username
+	user.HashPassword = dbUser.HashPassword
 
 	match, err := src.ComparePasswordAndHash(payload.Password, user.HashPassword)
 	if err != nil {
@@ -63,8 +67,13 @@ func (db WithDB) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.db.Exec("INSERT INTO sessions (user_id, session_code, device, last_ip) VALUES ($1, $2, $3, $4)", user.ID, token, r.UserAgent(), r.RemoteAddr)
-	if err != nil {
+	if err := h.s.CreateSession(&store.Session{
+		Code:     token,
+		UserID:   user.ID,
+		Device:   r.UserAgent(),
+		LastIP:   r.RemoteAddr,
+		LastUsed: time.Now(),
+	}); err != nil {
 		log.Printf("Error creating session for user %s: %v", payload.Username, err)
 		http.Error(w, "Failed to create session", http.StatusInternalServerError)
 		return

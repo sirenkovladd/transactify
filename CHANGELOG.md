@@ -41,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved reactivity of transaction list rendering.
 - Converted `CategoryModal` to a reactive VanJS component
 - Refactored `ImportModal` to use reactive state, removing manual DOM manipulation
+- Replaced PostgreSQL with embedded bbolt (go.etcd.io/bbolt) for storage. The bbolt file is mounted via `data/transaction.db`. See `docs/runbooks/migrate-to-bbolt.md` for the cutover procedure.
+- Introduce a `store` package that wraps bbolt and exposes typed methods (one file per table) so route handlers no longer use `database/sql`.
+
+### Removed
+
+- PostgreSQL service, `db_data` docker volume, and the `POSTGRES_*` environment variables. The `lib/pq` driver is no longer a runtime dependency.
+- SQL migrations under `server/migrations/`. Replaced by Go-based migrations in `server/migrations_bbolt/`.
 
 ### Fixed
 

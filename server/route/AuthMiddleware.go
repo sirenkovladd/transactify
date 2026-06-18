@@ -1,11 +1,12 @@
 package route
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+
+	"code.sirenko.ca/transaction/store"
 )
 
 type HTTPError struct {
@@ -13,7 +14,7 @@ type HTTPError struct {
 	Err  error
 }
 
-func GetUserId(db *sql.DB, r *http.Request) (int, *HTTPError) {
+func GetUserId(s *store.Store, r *http.Request) (uint64, *HTTPError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("authorization header required")}
@@ -24,21 +25,20 @@ func GetUserId(db *sql.DB, r *http.Request) (int, *HTTPError) {
 		return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("bearer token required")}
 	}
 
-	var userID int
-	err := db.QueryRow("UPDATE sessions SET last_used = now() WHERE session_code = $1 RETURNING user_id", tokenString).Scan(&userID)
+	sess, err := s.GetSessionByCode(tokenString)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == store.ErrNotFound {
 			return 0, &HTTPError{http.StatusUnauthorized, fmt.Errorf("invalid session token")}
 		}
-		log.Printf("Error querying database for session token %s: %v", tokenString, err)
+		log.Printf("Error querying session token %s: %v", tokenString, err)
 		return 0, &HTTPError{http.StatusInternalServerError, fmt.Errorf("failed to query database")}
 	}
-	return userID, nil
+	return sess.UserID, nil
 }
 
-func (db WithDB) AuthMiddleware(next func(w http.ResponseWriter, r *http.Request, userId int)) http.Handler {
+func (h WithStore) AuthMiddleware(next func(w http.ResponseWriter, r *http.Request, userId uint64)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId, err := GetUserId(db.db, r)
+		userId, err := GetUserId(h.s, r)
 		if err != nil {
 			http.Error(w, err.Err.Error(), err.Code)
 			return

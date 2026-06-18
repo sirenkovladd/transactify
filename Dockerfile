@@ -25,7 +25,6 @@ RUN --mount=type=cache,target=/go-build-cache go build -ldflags "-s -w -X 'main.
 # Stage 3: Final image
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
-COPY ./server/migrations ./server/migrations
 COPY --from=server /app/app .
 EXPOSE 8080
 CMD ["./app"]

@@ -36,3 +36,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # plans and skill artifacts (kept in the worktree, not in main)
 docs/superpowers/
+# bbolt database file
+data/transaction.db
+
+# build output
+bin/

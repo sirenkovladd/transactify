@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (db WithDB) GenerateSharingToken(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) GenerateSharingToken(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -19,8 +19,7 @@ func (db WithDB) GenerateSharingToken(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	_, err = db.db.Exec("INSERT INTO sharing_tokens (user_id, token) VALUES ($1, $2)", userId, token)
-	if err != nil {
+	if err := h.s.CreateToken(token, userId); err != nil {
 		log.Printf("Error creating sharing token for user %d: %v", userId, err)
 		http.Error(w, "Failed to create sharing token", http.StatusInternalServerError)
 		return

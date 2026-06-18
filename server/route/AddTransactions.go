@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
+
+	"code.sirenko.ca/transaction/store"
 )
 
 type AddTransactionPayload struct {
@@ -17,7 +21,7 @@ type AddTransactionPayload struct {
 	Tags       []string `json:"tags"`
 }
 
-func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) AddTransactions(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -29,23 +33,42 @@ func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request, userId 
 		return
 	}
 
-	tx, err := db.db.Begin()
-	if err != nil {
-		log.Printf("Failed to start transaction: %v", err)
-		http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback()
-
+	// Dedupe the payload by (merchant, occurred_at, amount) — the SQL
+	// unique constraint moved to client-side. First occurrence wins.
+	seen := make(map[string]struct{}, len(payload))
+	deduped := make([]AddTransactionPayload, 0, len(payload))
 	for _, t := range payload {
-		var transactionID int64
-		err := tx.QueryRow(
-			"INSERT INTO transactions (amount, currency, occurred_at, merchant, user_id, card, category, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id, merchant, occurred_at, amount) DO UPDATE SET category = EXCLUDED.category, card = EXCLUDED.card, details = CASE WHEN EXCLUDED.details IS NOT NULL AND EXCLUDED.details <> '' THEN EXCLUDED.details ELSE transactions.details END RETURNING transaction_id",
-			t.Amount, t.Currency, t.OccurredAt, t.Merchant, userId, t.Card, t.Category, t.Details,
-		).Scan(&transactionID)
+		occurredAt, err := time.Parse(time.RFC3339, t.OccurredAt)
 		if err != nil {
-			log.Printf("Failed to insert/update transaction: %v", err)
-			http.Error(w, "Failed to insert/update transaction", http.StatusInternalServerError)
+			http.Error(w, "Invalid occurredAt: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		key := t.Merchant + "|" + occurredAt.UTC().Format(time.RFC3339Nano) + "|" + strconv.FormatFloat(t.Amount, 'f', -1, 64)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		t.OccurredAt = occurredAt.Format(time.RFC3339)
+		deduped = append(deduped, t)
+	}
+
+	for _, t := range deduped {
+		occurredAt, _ := time.Parse(time.RFC3339, t.OccurredAt)
+		txn := &store.Transaction{
+			UserID:     userId,
+			Amount:     t.Amount,
+			Currency:   t.Currency,
+			OccurredAt: occurredAt,
+			Merchant:   t.Merchant,
+			Card:       t.Card,
+			Category:   t.Category,
+		}
+		if t.Details != nil {
+			txn.Details = *t.Details
+		}
+		if err := h.s.CreateTransaction(txn); err != nil {
+			log.Printf("Failed to insert transaction: %v", err)
+			http.Error(w, "Failed to insert transaction", http.StatusInternalServerError)
 			return
 		}
 
@@ -54,28 +77,19 @@ func (db WithDB) AddTransactions(w http.ResponseWriter, r *http.Request, userId 
 				if tagName == "" {
 					continue
 				}
-				var tagID int64
-				err = tx.QueryRow("INSERT INTO tags (tag_name) VALUES ($1) ON CONFLICT (tag_name) DO UPDATE SET tag_name = EXCLUDED.tag_name RETURNING tag_id", tagName).Scan(&tagID)
+				tag, err := h.s.GetOrCreateTag(tagName)
 				if err != nil {
 					log.Printf("Failed to get or create tag %s: %v", tagName, err)
 					http.Error(w, "Failed to get or create tag", http.StatusInternalServerError)
 					return
 				}
-
-				_, err := tx.Exec("INSERT INTO transaction_tags (transaction_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", transactionID, tagID)
-				if err != nil {
-					log.Printf("Failed to add tag to transaction %d: %v", transactionID, err)
+				if err := h.s.AddTagToTransaction(txn.ID, tag.ID); err != nil {
+					log.Printf("Failed to add tag to transaction %d: %v", txn.ID, err)
 					http.Error(w, "Failed to add tag to transaction", http.StatusInternalServerError)
 					return
 				}
 			}
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Printf("Failed to commit transaction: %v", err)
-		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
-		return
 	}
 
 	w.WriteHeader(http.StatusCreated)

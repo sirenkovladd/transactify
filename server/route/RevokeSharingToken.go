@@ -10,7 +10,7 @@ type RevokeTokenPayload struct {
 	Token string `json:"token"`
 }
 
-func (db WithDB) RevokeSharingToken(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) RevokeSharingToken(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -22,8 +22,7 @@ func (db WithDB) RevokeSharingToken(w http.ResponseWriter, r *http.Request, user
 		return
 	}
 
-	_, err := db.db.Exec("DELETE FROM sharing_tokens WHERE token = $1 AND user_id = $2", payload.Token, userId)
-	if err != nil {
+	if err := h.s.RevokeToken(payload.Token, userId); err != nil {
 		log.Printf("Error revoking sharing token for user %d: %v", userId, err)
 		http.Error(w, "Failed to revoke sharing token", http.StatusInternalServerError)
 		return

@@ -2,7 +2,6 @@ package route
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"strings"
 
 	"code.sirenko.ca/transaction/src"
+	"code.sirenko.ca/transaction/store"
 )
 
 var allowedExtensions = map[string]bool{
@@ -27,22 +27,21 @@ type DeletePhotoPayload struct {
 	FilePath string `json:"filePath"`
 }
 
-func (db WithDB) AttachPhoto(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) AttachPhoto(w http.ResponseWriter, r *http.Request, userId uint64) {
 	transactionIdStr := r.PathValue("id")
 	if transactionIdStr == "" {
 		http.Error(w, "Transaction ID is required", http.StatusBadRequest)
 		return
 	}
-	transactionId, err := strconv.ParseInt(transactionIdStr, 10, 64)
+	transactionId, err := strconv.ParseUint(transactionIdStr, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid Transaction ID", http.StatusBadRequest)
 		return
 	}
 
-	var ownerId int
-	err = db.db.QueryRow("SELECT user_id FROM transactions WHERE transaction_id = $1", transactionId).Scan(&ownerId)
+	t, err := h.s.GetTransaction(transactionId)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == store.ErrNotFound {
 			http.Error(w, "Transaction not found", http.StatusNotFound)
 			return
 		}
@@ -50,7 +49,7 @@ func (db WithDB) AttachPhoto(w http.ResponseWriter, r *http.Request, userId int)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	if ownerId != userId {
+	if t.UserID != userId {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -73,7 +72,7 @@ func (db WithDB) AttachPhoto(w http.ResponseWriter, r *http.Request, userId int)
 		return
 	}
 
-	encryptedUserId, err := src.Encrypt(strconv.Itoa(userId))
+	encryptedUserId, err := src.Encrypt(strconv.FormatUint(userId, 10))
 	if err != nil {
 		log.Printf("Error encrypting user ID: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -104,8 +103,11 @@ func (db WithDB) AttachPhoto(w http.ResponseWriter, r *http.Request, userId int)
 	fileName := fmt.Sprintf("photo-%s%s", randomString, ext)
 	filePath := filepath.Join(dirPath, fileName)
 
-	_, err = db.db.Exec("INSERT INTO transaction_photos (transaction_id, file_path) VALUES ($1, $2)", transactionId, filePath)
-	if err != nil {
+	photo := &store.Photo{
+		TransactionID: transactionId,
+		FilePath:      filePath,
+	}
+	if err := h.s.CreatePhoto(photo); err != nil {
 		log.Printf("Failed to create photo record: %v", err)
 		http.Error(w, "Failed to create photo record", http.StatusInternalServerError)
 		return
@@ -113,12 +115,16 @@ func (db WithDB) AttachPhoto(w http.ResponseWriter, r *http.Request, userId int)
 
 	dst, err := os.Create(filePath)
 	if err != nil {
+		// Roll back the photo record since the file write failed.
+		_ = h.s.DeletePhotoByPath(filePath)
 		http.Error(w, "Unable to create the file for writing", http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, file); err != nil {
+		_ = h.s.DeletePhotoByPath(filePath)
+		_ = os.Remove(filePath)
 		http.Error(w, "Unable to save the file", http.StatusInternalServerError)
 		return
 	}
@@ -129,17 +135,16 @@ func (db WithDB) AttachPhoto(w http.ResponseWriter, r *http.Request, userId int)
 	})
 }
 
-func (db WithDB) DeletePhotoByPath(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) DeletePhotoByPath(w http.ResponseWriter, r *http.Request, userId uint64) {
 	var payload DeletePhotoPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	var transactionId int64
-	err := db.db.QueryRow("SELECT transaction_id FROM transaction_photos WHERE file_path = $1", payload.FilePath).Scan(&transactionId)
+	photo, err := h.s.GetPhotoByPath(payload.FilePath)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == store.ErrNotFound {
 			http.Error(w, "Photo not found", http.StatusNotFound)
 			return
 		}
@@ -148,20 +153,18 @@ func (db WithDB) DeletePhotoByPath(w http.ResponseWriter, r *http.Request, userI
 		return
 	}
 
-	var ownerId int
-	err = db.db.QueryRow("SELECT user_id FROM transactions WHERE transaction_id = $1", transactionId).Scan(&ownerId)
+	t, err := h.s.GetTransaction(photo.TransactionID)
 	if err != nil {
 		log.Printf("Error checking transaction ownership: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	if ownerId != userId {
+	if t.UserID != userId {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
-	_, err = db.db.Exec("DELETE FROM transaction_photos WHERE file_path = $1", payload.FilePath)
-	if err != nil {
+	if err := h.s.DeletePhotoByPath(payload.FilePath); err != nil {
 		log.Printf("Error deleting photo record: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -174,7 +177,7 @@ func (db WithDB) DeletePhotoByPath(w http.ResponseWriter, r *http.Request, userI
 	w.WriteHeader(http.StatusOK)
 }
 
-func (db WithDB) GetPhotoByPath(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) GetPhotoByPath(w http.ResponseWriter, r *http.Request, userId uint64) {
 	encryptedUserId := r.PathValue("encrypted_user_id")
 	encryptedTransactionId := r.PathValue("encrypted_transaction_id")
 	fileName := r.PathValue("filename")
@@ -184,7 +187,7 @@ func (db WithDB) GetPhotoByPath(w http.ResponseWriter, r *http.Request, userId i
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
-	decryptedUserId, err := strconv.Atoi(decryptedUserIdStr)
+	decryptedUserId, err := strconv.ParseUint(decryptedUserIdStr, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
 		return
@@ -195,20 +198,16 @@ func (db WithDB) GetPhotoByPath(w http.ResponseWriter, r *http.Request, userId i
 		http.Error(w, "Invalid transaction ID", http.StatusBadRequest)
 		return
 	}
-	decryptedTransactionId, err := strconv.ParseInt(decryptedTransactionIdStr, 10, 64)
+	decryptedTransactionId, err := strconv.ParseUint(decryptedTransactionIdStr, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid transaction ID format", http.StatusBadRequest)
 		return
 	}
 
-	var ownerId int
-	err = db.db.QueryRow(`
-		SELECT t.user_id
-		FROM transactions t
-		WHERE t.transaction_id = $1 AND t.user_id = $2
-	`, decryptedTransactionId, decryptedUserId).Scan(&ownerId)
+	// The decrypted user ID is the owner of the photo's transaction.
+	owner, err := h.s.GetTransaction(decryptedTransactionId)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == store.ErrNotFound {
 			http.Error(w, "Transaction not found or does not belong to user", http.StatusNotFound)
 			return
 		}
@@ -216,17 +215,33 @@ func (db WithDB) GetPhotoByPath(w http.ResponseWriter, r *http.Request, userId i
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	if owner.UserID != decryptedUserId {
+		http.Error(w, "Transaction not found or does not belong to user", http.StatusNotFound)
+		return
+	}
 
-	// Now check if the logged-in user has access
-	var hasAccess bool
-	err = db.db.QueryRow(`
-		SELECT true
-		FROM transactions t
-		WHERE t.transaction_id = $1
-		AND (t.user_id = $2 OR $2 IN (SELECT user_id FROM user_connections WHERE connected_user_id = t.user_id))
-	`, decryptedTransactionId, userId).Scan(&hasAccess)
+	// Now check if the logged-in user has access: owner or a subscriber.
+	// Mirrors the original SQL: `$2 IN (SELECT user_id FROM user_connections
+	// WHERE connected_user_id = t.user_id)` — i.e., the logged-in user has
+	// added the owner as a connection, which is exactly the "subscriber of
+	// the owner" relationship.
+	hasAccess := userId == owner.UserID
+	if !hasAccess {
+		subscribers, err := h.s.ListSubscribers(owner.UserID)
+		if err != nil {
+			log.Printf("Error checking access: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		for _, sid := range subscribers {
+			if sid == userId {
+				hasAccess = true
+				break
+			}
+		}
+	}
 
-	if err != nil || !hasAccess {
+	if !hasAccess {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}

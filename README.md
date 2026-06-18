@@ -14,13 +14,12 @@ This project is a web application for managing personal transactions. It allows 
 
 *   **Backend:** Go
 *   **Frontend:** TypeScript, [vanjs-core](https://vanjs.org/)
-*   **Database:** PostgreSQL
+*   **Database:** [bbolt](https://pkg.go.dev/go.etcd.io/bbolt) (embedded key/value store)
 *   **Build Tool:** Bun
 
 ## Prerequisites
 
 *   Go (version 1.25.1 or later)
-*   PostgreSQL
 *   Node.js
 *   Bun
 
@@ -28,13 +27,11 @@ This project is a web application for managing personal transactions. It allows 
 
 ### 1. Database Setup
 
-1.  Create a PostgreSQL database.
-2.  Set the following environment variables:
-    *   `POSTGRES_USER`: Your PostgreSQL username.
-    *   `POSTGRES_PASSWORD`: Your PostgreSQL password.
-    *   `POSTGRES_DB`: The name of your PostgreSQL database.
-    *   `POSTGRES_HOST`: The host of your PostgreSQL database.
-    *   `POSTGRES_PORT`: The port of your PostgreSQL database (defaults to 5432).
+The server uses an embedded bbolt file; no external database service is required. Set the following environment variables:
+
+*   `BBOLT_PATH`: Path to the bbolt file. Defaults to `./data/transaction.db`. The parent directory is created on first run.
+
+On first start the server runs any pending Go-based migrations (see `server/migrations_bbolt/`) to create the required buckets.
 
 ### 2. Backend
 
@@ -65,8 +62,8 @@ This project is a web application for managing personal transactions. It allows 
 
 *   The backend is written in Go.
 *   The backend uses the standard Go project layout.
-*   The backend uses the `net/http` package for the HTTP server and the `database/sql` package for database access.
-*   The backend uses the `github.com/lib/pq` driver for PostgreSQL.
+*   The backend uses the `net/http` package for the HTTP server and the `go.etcd.io/bbolt` package for embedded key/value storage.
+*   The `store` package wraps bbolt and exposes typed methods for every table the app uses (users, sessions, transactions, tags, photos, sharing, settings).
 
 ### Frontend
 

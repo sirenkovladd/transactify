@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (db WithDB) Logout(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) Logout(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -15,8 +15,7 @@ func (db WithDB) Logout(w http.ResponseWriter, r *http.Request, userId int) {
 	authHeader := r.Header.Get("Authorization")
 	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-	_, err := db.db.Exec("DELETE FROM sessions WHERE session_code = $1 AND user_id = $2", tokenString, userId)
-	if err != nil {
+	if err := h.s.DeleteSession(tokenString, userId); err != nil {
 		log.Printf("Error deleting session for user %d: %v", userId, err)
 		http.Error(w, "Failed to log out", http.StatusInternalServerError)
 		return

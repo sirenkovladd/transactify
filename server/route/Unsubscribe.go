@@ -13,7 +13,7 @@ type UnsubscribePayload struct {
 	EncryptedUserID string `json:"encryptedUserId"`
 }
 
-func (db WithDB) Unsubscribe(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) Unsubscribe(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -37,28 +37,21 @@ func (db WithDB) Unsubscribe(w http.ResponseWriter, r *http.Request, userId int)
 		return
 	}
 
-	connectedUserId, err := strconv.Atoi(decryptedUserIDStr)
+	connectedUserId, err := strconv.ParseUint(decryptedUserIDStr, 10, 64)
 	if err != nil {
 		log.Printf("Error converting decrypted user ID to int: %v", err)
 		http.Error(w, "Invalid decrypted user ID format", http.StatusInternalServerError)
 		return
 	}
 
-	res, err := db.db.Exec("DELETE FROM user_connections WHERE user_id = $1 AND connected_user_id = $2", userId, connectedUserId)
+	removed, err := h.s.RemoveConnection(userId, connectedUserId)
 	if err != nil {
 		log.Printf("Error unsubscribing user %d from %d: %v", userId, connectedUserId, err)
 		http.Error(w, "Failed to unsubscribe", http.StatusInternalServerError)
 		return
 	}
 
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		log.Printf("Error getting rows affected for unsubscribe: %v", err)
-		http.Error(w, "Failed to unsubscribe", http.StatusInternalServerError)
-		return
-	}
-
-	if rowsAffected == 0 {
+	if !removed {
 		http.Error(w, "Subscription not found or already unsubscribed", http.StatusNotFound)
 		return
 	}

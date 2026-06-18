@@ -2,7 +2,6 @@ package route
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -13,14 +12,15 @@ import (
 
 	root "code.sirenko.ca/transaction"
 	"code.sirenko.ca/transaction/server"
+	"code.sirenko.ca/transaction/store"
 )
 
-type WithDB struct {
-	db *sql.DB
+type WithStore struct {
+	s *store.Store
 }
 
-func NewWithDB(db *sql.DB) WithDB {
-	return WithDB{db: db}
+func NewWithStore(s *store.Store) WithStore {
+	return WithStore{s: s}
 }
 
 func generateSecureToken(length int) (string, error) {
@@ -122,39 +122,32 @@ func getFileSystem() http.FileSystem {
 	return http.Dir("./dist")
 }
 
-func artificialDelay(delay time.Duration, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(delay)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (db WithDB) GetMux() http.Handler {
+func (h WithStore) GetMux() http.Handler {
 	mux := http.NewServeMux()
-	a := db.AuthMiddleware
+	a := h.AuthMiddleware
 
-	mux.HandleFunc("/api/login", db.Login)
-	mux.Handle("POST /api/transaction/{id}/photo", a(db.AttachPhoto))
-	mux.Handle("DELETE /api/photo", a(db.DeletePhotoByPath))
-	mux.Handle("GET /uploads/transaction/{encrypted_user_id}/{encrypted_transaction_id}/{filename}", a(db.GetPhotoByPath))
-	mux.Handle("/api/transactions/add", a(db.AddTransactions))
-	mux.Handle("/api/transactions", a(db.GetTransactions))
-	mux.Handle("/api/transaction/update", a(db.UpdateTransaction))
-	mux.Handle("/api/transaction/delete", a(db.DeleteTransaction))
-	mux.Handle("/api/transactions/tags", a(db.ManageTags))
-	mux.Handle("/api/transactions/category", a(db.ManageCategory))
-	mux.Handle("/api/categories", a(db.GetCategories))
-	mux.Handle("/api/sharing/token", a(db.GenerateSharingToken))
-	mux.Handle("/api/sharing/connections", a(db.GetSharingConnections))
-	mux.Handle("/api/sharing/connections/add", a(db.AddSharingConnection))
-	mux.Handle("/api/sharing/token/revoke", a(db.RevokeSharingToken))
-	mux.Handle("/api/sharing/tokens", a(db.GetSharingTokens))
-	mux.Handle("/api/sharing/subscriptions", a(db.GetSubscriptions))
-	mux.Handle("/api/sharing/unsubscribe", a(db.Unsubscribe))
-	mux.Handle("GET /api/settings", a(db.GetSettings))
-	mux.Handle("POST /api/settings", a(db.UpdateSetting))
-	mux.Handle("/api/logout", a(db.Logout))
+	mux.HandleFunc("/api/login", h.Login)
+	mux.Handle("POST /api/transaction/{id}/photo", a(h.AttachPhoto))
+	mux.Handle("DELETE /api/photo", a(h.DeletePhotoByPath))
+	mux.Handle("GET /uploads/transaction/{encrypted_user_id}/{encrypted_transaction_id}/{filename}", a(h.GetPhotoByPath))
+	mux.Handle("/api/transactions/add", a(h.AddTransactions))
+	mux.Handle("/api/transactions", a(h.GetTransactions))
+	mux.Handle("/api/transaction/update", a(h.UpdateTransaction))
+	mux.Handle("/api/transaction/delete", a(h.DeleteTransaction))
+	mux.Handle("/api/transactions/tags", a(h.ManageTags))
+	mux.Handle("/api/transactions/category", a(h.ManageCategory))
+	mux.Handle("/api/categories", a(h.GetCategories))
+	mux.Handle("/api/sharing/token", a(h.GenerateSharingToken))
+	mux.Handle("/api/sharing/connections", a(h.GetSharingConnections))
+	mux.Handle("/api/sharing/connections/add", a(h.AddSharingConnection))
+	mux.Handle("/api/sharing/token/revoke", a(h.RevokeSharingToken))
+	mux.Handle("/api/sharing/tokens", a(h.GetSharingTokens))
+	mux.Handle("/api/sharing/subscriptions", a(h.GetSubscriptions))
+	mux.Handle("/api/sharing/unsubscribe", a(h.Unsubscribe))
+	mux.Handle("GET /api/settings", a(h.GetSettings))
+	mux.Handle("POST /api/settings", a(h.UpdateSetting))
+	mux.Handle("/api/logout", a(h.Logout))
 	mux.Handle("/", http.FileServer(getFileSystem()))
 
-	return artificialDelay(500*time.Millisecond, mux)
+	return mux
 }

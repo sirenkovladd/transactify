@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	bolt "go.etcd.io/bbolt"
+
+	"code.sirenko.ca/transaction/store"
 )
 
 // allBuckets lists every top-level bucket the loadAll function creates.
@@ -141,10 +143,7 @@ func loadAll(s *bolt.DB,
 			if err := tx.Bucket([]byte("transactions")).Put(itob64(t.ID), buf); err != nil {
 				return err
 			}
-			idxKey := make([]byte, 0, 24)
-			idxKey = append(idxKey, itob64(t.UserID)...)
-			idxKey = append(idxKey, itob64(uint64(t.OccurredAt.UnixNano()))...)
-			idxKey = append(idxKey, itob64(t.ID)...)
+			idxKey := store.TxByUserTimeKey(t.UserID, t.OccurredAt, t.ID)
 			if err := tx.Bucket([]byte("txn_by_user_time")).Put(idxKey, itob64(t.ID)); err != nil {
 				return err
 			}

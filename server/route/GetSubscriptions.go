@@ -14,39 +14,36 @@ type Subscription struct {
 	EncryptedUserID string `json:"encryptedUserId"`
 }
 
-func (db WithDB) GetSubscriptions(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) GetSubscriptions(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	rows, err := db.db.Query("SELECT u.person_name, u.user_id FROM user_connections uc JOIN users u ON uc.user_id = u.user_id WHERE uc.connected_user_id = $1", userId)
+	subscribers, err := h.s.ListSubscribers(userId)
 	if err != nil {
 		log.Printf("Error querying subscriptions for user %d: %v", userId, err)
 		http.Error(w, "Failed to query subscriptions", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
 
-	var subscriptions []Subscription
-	for rows.Next() {
-		var s Subscription
-		var rawUserID int
-		if err := rows.Scan(&s.PersonName, &rawUserID); err != nil {
-			log.Printf("Error scanning subscription: %v", err)
-			http.Error(w, "Failed to scan subscription", http.StatusInternalServerError)
-			return
-		}
-
-		encryptedUserID, err := src.Encrypt(strconv.Itoa(rawUserID))
+	subscriptions := make([]Subscription, 0, len(subscribers))
+	for _, sid := range subscribers {
+		u, err := h.s.GetUserByID(sid)
 		if err != nil {
-			log.Printf("Error encrypting user ID %d: %v", rawUserID, err)
+			log.Printf("Error looking up user %d: %v", sid, err)
+			continue
+		}
+		encryptedUserID, err := src.Encrypt(strconv.FormatUint(sid, 10))
+		if err != nil {
+			log.Printf("Error encrypting user ID %d: %v", sid, err)
 			http.Error(w, "Failed to encrypt user ID", http.StatusInternalServerError)
 			return
 		}
-		s.EncryptedUserID = encryptedUserID
-
-		subscriptions = append(subscriptions, s)
+		subscriptions = append(subscriptions, Subscription{
+			PersonName:      u.PersonName,
+			EncryptedUserID: encryptedUserID,
+		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -1,17 +1,18 @@
 package route
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"code.sirenko.ca/transaction/store"
 )
 
 type AddConnectionPayload struct {
 	Token string `json:"token"`
 }
 
-func (db WithDB) AddSharingConnection(w http.ResponseWriter, r *http.Request, userId int) {
+func (h WithStore) AddSharingConnection(w http.ResponseWriter, r *http.Request, userId uint64) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -23,10 +24,9 @@ func (db WithDB) AddSharingConnection(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	var connectedUserId int
-	err := db.db.QueryRow("SELECT user_id FROM sharing_tokens WHERE token = $1", payload.Token).Scan(&connectedUserId)
+	connectedUserId, err := h.s.GetTokenOwner(payload.Token)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == store.ErrNotFound {
 			http.Error(w, "Invalid sharing token", http.StatusBadRequest)
 			return
 		}
@@ -35,8 +35,7 @@ func (db WithDB) AddSharingConnection(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	_, err = db.db.Exec("INSERT INTO user_connections (user_id, connected_user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userId, connectedUserId)
-	if err != nil {
+	if err := h.s.AddConnection(userId, connectedUserId); err != nil {
 		log.Printf("Error creating sharing connection for user %d: %v", userId, err)
 		http.Error(w, "Failed to create sharing connection", http.StatusInternalServerError)
 		return
