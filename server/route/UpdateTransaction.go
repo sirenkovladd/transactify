@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"code.sirenko.ca/transaction/store"
 )
@@ -91,7 +90,7 @@ func (h WithStore) UpdateTransaction(w http.ResponseWriter, r *http.Request, use
 		changed = true
 	}
 	if payload.OccurredAt != nil {
-		occurredAt, err := time.Parse(time.RFC3339, *payload.OccurredAt)
+		occurredAt, err := parseOccurredAt(*payload.OccurredAt)
 		if err != nil {
 			http.Error(w, "Invalid occurredAt: "+err.Error(), http.StatusBadRequest)
 			return

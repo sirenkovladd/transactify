@@ -38,7 +38,7 @@ func (h WithStore) AddTransactions(w http.ResponseWriter, r *http.Request, userI
 	seen := make(map[string]struct{}, len(payload))
 	deduped := make([]AddTransactionPayload, 0, len(payload))
 	for _, t := range payload {
-		occurredAt, err := time.Parse(time.RFC3339, t.OccurredAt)
+		occurredAt, err := parseOccurredAt(t.OccurredAt)
 		if err != nil {
 			http.Error(w, "Invalid occurredAt: "+err.Error(), http.StatusBadRequest)
 			return
@@ -53,7 +53,7 @@ func (h WithStore) AddTransactions(w http.ResponseWriter, r *http.Request, userI
 	}
 
 	for _, t := range deduped {
-		occurredAt, _ := time.Parse(time.RFC3339, t.OccurredAt)
+		occurredAt, _ := parseOccurredAt(t.OccurredAt)
 		txn := &store.Transaction{
 			UserID:     userId,
 			Amount:     t.Amount,
