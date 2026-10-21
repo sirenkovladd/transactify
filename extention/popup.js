@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         query: `query FetchActivityFeedItems($first: Int, $cursor: Cursor, $condition: ActivityCondition, $orderBy: [ActivitiesOrderBy!] = OCCURRED_AT_DESC) {
           activityFeedItems(first: $first, after: $cursor, condition: $condition, orderBy: $orderBy) {
-            edges { node { amount amountSign currency occurredAt spendMerchant type eTransferName unifiedStatus } }
+            edges { node { amount amountSign currency occurredAt spendMerchant type eTransferName aftOriginatorName billPayCompanyName billPayPayeeNickname counterPartyName unifiedStatus } }
             pageInfo { hasNextPage endCursor }
           }
         }`

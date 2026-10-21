@@ -186,8 +186,12 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 			amountSign: string;
 			amount: string;
 			occurredAt: string;
-			spendMerchant?: string;
-			eTransferName?: string;
+			spendMerchant?: string | null;
+			eTransferName?: string | null;
+			aftOriginatorName?: string | null;
+			billPayCompanyName?: string | null;
+			billPayPayeeNickname?: string | null;
+			counterPartyName?: string | null;
 			type: string;
 			unifiedStatus: string; // "PENDING", "COMPLETED"
 		};
@@ -197,7 +201,22 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 		.filter((e) => e.node.unifiedStatus !== "PENDING")
 		.map((item) => {
 			const node = item.node;
-			if (["CREDIT_CARD_PAYMENT", "DEPOSIT"].includes(node.type)) {
+			if (node.type === "CREDIT_CARD_PAYMENT") {
+				console.log("skip 1", node);
+				return null;
+			}
+			// Any identifiable counterparty means this is a real transaction
+			// (spend, e-transfer, pre-authorized debit like B.C. HYDRO, etc.)
+			// and must be kept. DEPOSITs without one are funding/movement.
+			const counterparty =
+				node.spendMerchant ||
+				node.eTransferName ||
+				node.aftOriginatorName ||
+				node.billPayCompanyName ||
+				node.billPayPayeeNickname ||
+				node.counterPartyName ||
+				null;
+			if (node.type === "DEPOSIT" && !counterparty) {
 				console.log("skip 1", node);
 				return null;
 			}
@@ -215,8 +234,7 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 			const datetime = `${year}-${month}-${day}T${hours}:${minutes}`;
 
 			const merchant =
-				node.spendMerchant ||
-				node.eTransferName ||
+				counterparty ||
 				(node.type === "INTEREST" && "Interest") ||
 				(node.type === "REIMBURSEMENT" && "Cashback");
 			if (!merchant) {
