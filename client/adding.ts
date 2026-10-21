@@ -180,6 +180,10 @@ function getCategory(merchant: string): Categories {
 	return "unknown";
 }
 
+// Merchant names (lowercase substrings) that are internal/funding noise,
+// not real spending, and must be skipped on Wealthsimple import.
+const SKIP_MERCHANT_SUBSTRINGS = ["payso inc (dba"];
+
 function parseWealthsimple(data: string): ParsedImportRow[] {
 	const payload = JSON.parse(data) as {
 		node: {
@@ -239,6 +243,15 @@ function parseWealthsimple(data: string): ParsedImportRow[] {
 				(node.type === "REIMBURSEMENT" && "Cashback");
 			if (!merchant) {
 				console.log("skip 2", node);
+				return null;
+			}
+			// Internal/funding counterparties that aren't real spending.
+			if (
+				SKIP_MERCHANT_SUBSTRINGS.some((s) =>
+					merchant.toLowerCase().includes(s),
+				)
+			) {
+				console.log("skip 3", node);
 				return null;
 			}
 			const category = getCategory(merchant);
