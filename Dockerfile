@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY src src
 COPY server server
 COPY cli cli
+COPY store store
 # RUN ls -la & sleep 12
 COPY --from=client /app/dist ./dist
 ARG GIT_COMMIT=unknown
