@@ -125,7 +125,7 @@ export function StatsSidebar() {
 		// Category data
 		const categoryData = transactions.reduce(
 			(acc, tr) => {
-				acc[tr.category] = (acc[tr.category] || 0) + Math.abs(tr.amount);
+				acc[tr.category] = (acc[tr.category] || 0) + tr.amount;
 				return acc;
 			},
 			{} as Record<string, number>,
@@ -135,10 +135,10 @@ export function StatsSidebar() {
 		const tagsData = transactions.reduce(
 			(acc, tr) => {
 				if (tr.tags.length === 0) {
-					acc["Untagged"] = (acc["Untagged"] || 0) + Math.abs(tr.amount);
+					acc["Untagged"] = (acc["Untagged"] || 0) + tr.amount;
 				} else {
 					tr.tags.forEach((tag) => {
-						acc[tag] = (acc[tag] || 0) + Math.abs(tr.amount);
+						acc[tag] = (acc[tag] || 0) + tr.amount;
 					});
 				}
 				return acc;
@@ -149,7 +149,7 @@ export function StatsSidebar() {
 		// Person data
 		const personData = transactions.reduce(
 			(acc, tr) => {
-				acc[tr.personName] = (acc[tr.personName] || 0) + Math.abs(tr.amount);
+				acc[tr.personName] = (acc[tr.personName] || 0) + tr.amount;
 				return acc;
 			},
 			{} as Record<string, number>,
@@ -204,7 +204,7 @@ export function StatsSidebar() {
 			if (dailyDataMap.has(dayKey)) {
 				dailyDataMap.set(
 					dayKey,
-					(dailyDataMap.get(dayKey) || 0) + Math.abs(tr.amount),
+					(dailyDataMap.get(dayKey) || 0) + tr.amount,
 				);
 			}
 		});
